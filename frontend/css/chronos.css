@@ -1,0 +1,28 @@
+body {
+    font-family: "Inter", "Noto Sans SC","sans-serif";
+    background-color: #05070d;
+    color: azure;
+}
+h1 {
+    font-size: 50px;
+}
+
+.wc-button {
+    font-size: 30px;
+    background-color: #05070d;
+    color: azure;
+    border: 1px solid rgba(80,160,255,0.4);
+    padding: 20px 30px;
+    letter-spacing: 3px;
+    text-align: left;
+    width: 400px;
+}
+
+.wc-button:hover {
+
+    border-color:#4da6ff;
+
+    box-shadow:
+        0 0 10px #4da6ff;
+
+}
