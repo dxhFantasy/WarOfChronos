@@ -48,7 +48,7 @@ h1 {
     box-shadow:
     0 0 15px rgba(77,166,255,.6);
     backdrop-filter:blur(8px);
-    font-size:16px;
+    font-size:20px;
     animation:
     notice-in .25s ease;
 }
@@ -141,7 +141,7 @@ h1 {
 .room-id-input {
     width: 100%;
     padding: 10px;
-    font-size: 20px;
+    font-size: 25px;
     color: #4da6ff;
     background-color: rgba(10, 20, 40, .9);
     border: 1px solid rgba(77,166,255,.4);
@@ -155,4 +155,7 @@ h1 {
     border-radius: 50%;
 
     transition: transform 0.2s;
+}
+.author-github {
+    font-size: 20px;
 }
