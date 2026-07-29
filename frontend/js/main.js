@@ -30,6 +30,7 @@ $("#start-room-button").click(() => {
 
 $("#join-room-button").click(() => {
     showJoinRoomUI();
+    $("#join-room-id").focus();
 })
 
 $("#about-button").click(() => {
@@ -89,6 +90,9 @@ socket.onmessage = (event) => {
     if (data.type === "update_countdown") {
         $("#countdown").text(data.countdown);
     }
+    if (data.type === "error"){
+        showNotice(data.message, "warning")
+    }
 }
 
 function enterGame() {
@@ -108,16 +112,16 @@ $(document).ready(() => {
             <img 
                 src="${author.avatar_url}" 
                 class="rounded-circle"
-                width=50
-                height=50
+                width=60
+                height=60
                 alt="${author.login}"
             >
 
             <div class="author-info">
 
-                <h4 class="author-name">
-                    @${author.login}
-                </h4>
+                <h5 class="author-name">
+                    @${author.login} · ${author.login == "dxhFantasy" ? "主策划/游戏设计" : "前端网页/联机功能"}
+                </h5>
 
                 <a 
                     href="${author.html_url}" 
