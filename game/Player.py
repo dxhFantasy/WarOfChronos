@@ -4,4 +4,4 @@ from dataclasses import dataclass
 class Player():
   actionPoint : int
   apSlot : int
-  handCards : list[str]
+  handCards : list[int]
