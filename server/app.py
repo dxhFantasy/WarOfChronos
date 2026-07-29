@@ -3,7 +3,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import json
-
+from room import (
+    rooms,
+    create_room,
+)
 
 app = FastAPI(
     title="WarOfChronos Server",
@@ -25,11 +28,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-
-
 # 当前在线玩家
 connections = []
-
 
 # 测试接口
 @app.get("/")
@@ -45,41 +45,58 @@ async def websocket_endpoint(
 
     await websocket.accept()
 
+    room = None
+
     connections.append(websocket)
 
-
     try:
-
         while True:
 
-            # 接收客户端消息
             data = await websocket.receive_json()
 
+            action = data.get("action")
 
-            print(
-                "收到消息:",
-                data
-            )
+            if action == "create_room":
+                room = create_room()
+                room.add_player(websocket)
 
-
-            # 测试广播
-            for conn in connections:
-
-                await conn.send_json({
-
-                    "type":
-                    "message",
-
-                    "data":
-                    data
-
+                await websocket.send_json({
+                    "type": "room_created",
+                    "room_id": room.room_id,
                 })
+            elif action == "join_room":
+                room_id = data.get("room_id")
+                room = rooms.get(room_id)
 
+                if room:
+                    room.add_player(websocket)
 
+                    await websocket.send_json({
+                        "type": "room_joined",
+                        "room_id": room.room_id,
+                    })
+                else:
+                    await websocket.send_json({
+                        "type": "error",
+                        "message": "房间不存在"
+                    })
+                    continue
+            if room and room.is_ready():
+                for player in room.players:
+                    await player.send_json({
+                        "type": "game_start",
+                        "room_id": room.room_id,
+                    })
     except WebSocketDisconnect:
 
         connections.remove(websocket)
 
+        room.players.remove(websocket)
+
+        for player in room.players:
+            await player.send_json({
+                "type": "opponent_left",
+            })
         print(
             "玩家断开连接"
         )
