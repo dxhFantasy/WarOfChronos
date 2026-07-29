@@ -38,7 +38,16 @@ $("#return-menu-button").click(() => {
     $("#menu").removeClass("hidden");
     $("#game").addClass("hidden");
 });
-
+$("#ready-button").click(() => {
+    socket.send(
+        JSON.stringify({
+            action: "ready",
+        })
+    )
+    $("#ready-button")
+        .prop("disabled",true)
+        .text("已准备");
+})
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
 
@@ -54,10 +63,17 @@ socket.onmessage = (event) => {
     if (data.type === "opponent_left")  {
         showExitRoomUI();
     }
+    if (data.type === "ready_check") {
+        showReadyCheckUI();
+    }
+    if (data.type === "update_countdown") {
+        $("#countdown").text(data.countdown);
+    }
 }
 
 function enterGame() {
     $("#menu").addClass("hidden");
     $("#room-modal").removeClass("active");
     $("#game").removeClass("hidden");
+    $("#ready-modal").removeClass("active");
 }
