@@ -3,7 +3,7 @@ from classes.Tags import *
 
 
 class Target(Card):
-  def __init__(self,defense_ : int, attack_ : int, tags_ : list[Tag], cost_ : int, name_ : str, owner_ : str) -> None:
+  def __init__(self, attack_ : int,defense_ : int, tags_ : list[Tag], cost_ : int, name_ : str, owner_ : str) -> None:
     super().__init__(cost_, tags_, name_, owner_)
     self.defense = defense_
     self.attack = attack_
@@ -25,7 +25,7 @@ class Target(Card):
 
 
 class Unit(Target):
-  def __init__(self, defense_: int, attack_: int, tags_: list[Tag], cost_ : int, actionCost_ : int, name_ : str, owner_ : str, inHand_ : bool = True) -> None:
+  def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_ : int, actionCost_ : int, name_ : str, owner_ : str, inHand_ : bool = True) -> None:
     super().__init__(defense_, attack_, tags_, cost_, name_, owner_)
     self.actionCost = actionCost_
     self.inHand = inHand_
