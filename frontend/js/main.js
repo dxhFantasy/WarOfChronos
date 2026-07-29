@@ -1,10 +1,24 @@
 let socket = new WebSocket(
     `ws://${window.location.host}/ws`
 );
+const authorList = ["dxhFantasy", "lwjyreq"]
+let authorCache = new Array();
 
-$("#settings-button").click(() => {
-    showNotice("敬请期待")
-})
+async function getAuthor(){
+    if(authorCache.length > 0){
+        return authorCache;
+    }
+    for(const authorId of authorList){
+        let response = await fetch(
+            `https://api.github.com/users/${authorId}`
+        );
+        if(response.ok){
+            let authorData = await response.json();
+            authorCache.push(authorData);
+        }
+    }
+    return authorCache;
+}
 
 $("#start-room-button").click(() => {
     socket.send(
@@ -18,6 +32,9 @@ $("#join-room-button").click(() => {
     showJoinRoomUI();
 })
 
+$("#about-button").click(() => {
+    showAboutUI();
+})
 $("#join-room-confirm-button").click(() => {
     let roomId = $("#join-room-id").val();
     if( roomId.length === 0 ) {
@@ -48,6 +65,9 @@ $("#ready-button").click(() => {
         .prop("disabled",true)
         .text("已准备");
 })
+$("#about-return").click(() => {
+    hideAboutUI()
+})
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
 
@@ -77,3 +97,41 @@ function enterGame() {
     $("#game").removeClass("hidden");
     $("#ready-modal").removeClass("active");
 }
+
+$(document).ready(() => {
+    getAuthor().then(() => {
+        authorCache.forEach((author) => {
+            console.log(author);
+            let authorItem = `
+            <li class="author-item">
+
+            <img 
+                src="${author.avatar_url}" 
+                class="rounded-circle"
+                width=50
+                height=50
+                alt="${author.login}"
+            >
+
+            <div class="author-info">
+
+                <h4 class="author-name">
+                    @${author.login}
+                </h4>
+
+                <a 
+                    href="${author.html_url}" 
+                    target="_blank"
+                    class="author-github"
+                >
+                    GitHub
+                </a>
+
+            </div>
+
+        </li>            
+        `;
+        $("#author-list").append(authorItem);
+        })
+    })
+})

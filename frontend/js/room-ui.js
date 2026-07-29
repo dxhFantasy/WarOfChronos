@@ -24,6 +24,13 @@ function showReadyCheckUI() {
 function hideReadyCheckUI() {
     $("#ready-modal").removeClass("active");
 }
+
+function showAboutUI() {
+    $("#about-modal").addClass("active");
+}
+function hideAboutUI() {
+    $("#about-modal").removeClass("active");
+}
 $("#room-id").click(() => {
     let id = $("#room-id").text();
     navigator.clipboard.writeText(id).then(() => {
