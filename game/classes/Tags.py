@@ -15,5 +15,5 @@ class Keyword(Enum):
 @dataclass
 class Tag():
   keyword : Keyword
-  value : str | int
+  value : str | int | None = None
 
