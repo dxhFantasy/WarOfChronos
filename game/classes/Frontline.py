@@ -1,6 +1,21 @@
 from classes.Target import *
-class Frontline():
-  def __init__(self, targets_ : list[Target], maxTargets_ : int) -> None:
-    self.targets = targets_
-    self.maxTargets = maxTargets_
+from dataclasses import dataclass,field
 
+@dataclass
+class Unit():
+  id : int
+  cardId : int
+  atk : int
+  dfns : int
+  cost : int
+  actionCost : int
+  tags : list[Tag]
+  
+
+@dataclass
+class Frontline():
+  maxTargets : int
+  targets : list[Unit] = field(
+        default_factory=list[Unit]
+  ) # type: ignore
+  
