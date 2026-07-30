@@ -29,8 +29,8 @@ class Game():
     self.playerA : Player = Player(0,0,[])
     self.playerB : Player = Player(0,0,[])
     
-    self.deckA : list[int] = cardIds[0:len(cardIds)/2-1]
-    self.deckB : list[int] = cardIds[len(cardIds)/2:len(cardIds)/2-1]
+    self.deckA : list[int] = cardIds[0:len(cardIds)//2-1]
+    self.deckB : list[int] = cardIds[len(cardIds)//2:len(cardIds)//2-1]
 
     self.hqA = 20
     self.hqB = 20
@@ -66,17 +66,51 @@ class Game():
           if(player == 'A'):
             self.hqA -= 3
           else:
-            self.hpB -= 3
+            self.hqB -= 3
 
   def ReceiveRecord(self):
     ...
     #self.ProcessRecord(...)
   
   def ProcessRecord(self,entry : LogEntry):
-    ...
-  
-  def SendRecord(self,record : LogEntry):
+    type = entry.actionType
+    result : Result | None = None
+    try:
+      if(type == ActionType.DrawCard):
+        if(entry.target is None):
+          raise Exception('未给出抽牌数量')
+        self.DrawCard(entry.actorPlayer,entry.target)
+      elif(type == ActionType.PlayCard):
+        
+        ...# 重点
+        
+      elif(type == ActionType.TurnEnd):
+        if(entry.actorPlayer == 'N'):
+          raise Exception('什么叫滚木的回合结束了')
+        self.TurnEnd(entry.actorPlayer)
+      
+      elif ...:
+        ...
+      
+      result = Result('ok',gameState=self.GetState())
+
+    except Exception as err:
+      s = str(err)
+      debug(s)
+      result = Result('err',msg=s)
+      
+    
+    return result
+
+
+
+  def GetState(self):
     state = GameState(self.playerA,self.playerB,self.hqA,self.hqB,self.deckA,self.deckB,self.battlefields)
+    return state
+
+
+  def SendState(self):
+    state = self.GetState()
     if(state):
       ...
     ...
@@ -91,6 +125,7 @@ class Game():
       self.DrawCard('A',1)
       self.playerA.apSlot += 1
       self.playerA.actionPoint = self.playerA.apSlot
+    ...
     
 
     

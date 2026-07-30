@@ -36,19 +36,25 @@ class UnitCard(Card):
   def AddTag(self,newTag : Tag):
     self.tags.append(newTag)
 
-  def loseHp(self, damage : int) -> tuple[int,int]:
-    self.defense-=damage
-    return (self.defense, damage)
+  # def loseHp(self, damage : int) -> tuple[int,int]:
+  #   self.defense-=damage
+  #   return (self.defense, damage)
 
-  def TakeDamage(self,baseDamage : int) -> tuple[int,int]:
+  def ClacDamage(self,baseDamage : int) -> int:
     damage : int = baseDamage
     
     for tag in self.tags:
       if tag : #处理特殊效果
         ...
-
-    return self.loseHp(damage)
+    
+    return damage
   
+  def ClacAtk(self,baseAtk : int):
+    atk : int = baseAtk
+    for tag in self.tags:
+      if tag : #处理特殊效果
+        ...
+    return atk
 
 
 class CommandCard(Card):

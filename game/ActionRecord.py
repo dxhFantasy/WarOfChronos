@@ -6,12 +6,11 @@ from enum import Enum
 class ActionType(Enum):
   DrawCard = '抽牌'
   PlayCard = '出牌'
-  AddAtk = '获得攻击力'
-  AddDef = '获得防御力'
-  TakeDamage = '受到伤害'
+  #TakeDamage = '受到伤害'
   Attack = '攻击'
   TurnStart = '回合开始'
   TurnEnd = '回合结束'
+
 
   ...
 
