@@ -7,6 +7,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from pathlib import Path
 import json
 from room import (
     rooms,
@@ -19,14 +20,9 @@ app = FastAPI(
     title="WarOfChronos Server",
     version="0.1"
 )
-
-app.mount(
-    "/static",
-    StaticFiles(
-        directory="../frontend",
-    ),
-    name="static"
-)
+BASE_DIR = Path(__file__).resolve().parent.parent
+app.mount("/static", StaticFiles(directory=BASE_DIR/"frontend"), name="frontend")
+app.mount("/assets", StaticFiles(directory=BASE_DIR/"assets"), name="assets")
 #允许跨域请求
 app.add_middleware(
     CORSMiddleware,
@@ -80,6 +76,12 @@ async def websocket_endpoint(
                 room = rooms.get(room_id)
 
                 if room:
+                    if room.is_full():
+                        await player.send({
+                            "type": "error",
+                            "message":"房间已满人"
+                        })
+                        continue
                     await room.add_player(player)
 
                     await player.send({
