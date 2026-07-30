@@ -5,6 +5,11 @@ const authorList = ["dxhFantasy", "lwjyreq"]
 let authorCache = new Array();
 
 async function getAuthor(){
+    let cache = localStorage.getItem("authors")
+    if (cache) {
+        authorCache = JSON.parse(cache)
+        return;
+    }
     if(authorCache.length > 0){
         return authorCache;
     }
@@ -17,6 +22,10 @@ async function getAuthor(){
             authorCache.push(authorData);
         }
     }
+    localStorage.setItem(
+        "authors",
+        JSON.stringify(authorCache)
+    );
     return authorCache;
 }
 
@@ -105,7 +114,6 @@ function enterGame() {
 $(document).ready(() => {
     getAuthor().then(() => {
         authorCache.forEach((author) => {
-            console.log(author);
             let authorItem = `
             <li class="author-item">
 
@@ -137,5 +145,9 @@ $(document).ready(() => {
         `;
         $("#author-list").append(authorItem);
         })
+    }).catch((_) => {
+        let authorItem = `
+        拉取作者信息失败`
+        $("#author-list").append(authorItem);
     })
 })
