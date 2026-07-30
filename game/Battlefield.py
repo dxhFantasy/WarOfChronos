@@ -1,10 +1,10 @@
-import classes
-import classes.Frontline
+from classes.Frontline import*
+from dataclasses import dataclass,field
 
+@dataclass
 class Battlefield():
-  def __init__(self) -> None:
-    self.frontlines : list[classes.Frontline.Frontline] = []
-    
+  frontlines : list[Frontline] = field(default_factory=list[Frontline]) # type: ignore
+
 
 
 
