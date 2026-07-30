@@ -151,3 +151,4 @@ $(document).ready(() => {
         $("#author-list").append(authorItem);
     })
 })
+console.log(createCard(testCard))
