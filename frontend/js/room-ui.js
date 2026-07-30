@@ -19,6 +19,10 @@ function hideExitRoomUI() {
     $("#exit-game-modal").removeClass("active");
 }
 function showReadyCheckUI() {
+    $("#ready-button").prop("disabled", true)
+    setTimeout(() => {
+        $("#ready-button").prop("disabled", false)
+    }, 200)
     $("#ready-modal").addClass("active");
 }
 function hideReadyCheckUI() {
@@ -38,13 +42,9 @@ $("#room-id").click(() => {
     });
 });
 $("#ready-button").click(() => {
-
     socket.send(JSON.stringify({
-
         type:"ready"
-
     }));
-
 
     $(this)
         .prop("disabled",true)
