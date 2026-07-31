@@ -1,5 +1,6 @@
 from classes.Target import *
 from dataclasses import dataclass,field
+from Cards import *
 
 @dataclass
 class Unit():
@@ -19,3 +20,7 @@ class Frontline():
         default_factory=list[Unit]
   ) # type: ignore
   
+
+
+def CardToUnit(card : UnitCard):
+  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags)
