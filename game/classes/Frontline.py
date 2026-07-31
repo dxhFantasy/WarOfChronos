@@ -11,6 +11,8 @@ class Unit():
   cost : int
   actionCost : int
   tags : list[Tag]
+  uType : UnitType
+  utl : Literal[0,1,2]
   
 
 @dataclass
@@ -23,4 +25,4 @@ class Frontline():
 
 
 def CardToUnit(card : UnitCard):
-  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags)
+  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags,card.type,card.timeline)
