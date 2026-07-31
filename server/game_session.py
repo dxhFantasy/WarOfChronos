@@ -1,4 +1,8 @@
 '''实现游戏逻辑与服务器的互通'''
+##############################
+#消息格式提醒
+#A方总部的id是-1， B方是-2
+##############################
 from game.game import Game, LogEntry, GameState, HandCard, Battlefield, Frontline
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Any, Literal

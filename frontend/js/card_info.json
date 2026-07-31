@@ -1,0 +1,11 @@
+[
+    {
+        "name" : "example",
+        "cost" : 3,
+        "type": "defense",
+        "image": "assets/cards/example.jpg",
+        "attack": 3,
+        "hp": 10,
+        "effect": "效果示例"
+    }
+]
