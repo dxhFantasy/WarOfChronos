@@ -5,6 +5,13 @@ from ActionRecord import *
 from typing import Any,Literal
 
 
+def FindKeyw(u : Unit,k : Keyword):
+  for t in u.tags:
+    if t.keyword == k:
+      return u.tags.index(t)
+  return None
+
+
 
 @dataclass
 class GameState():
@@ -15,6 +22,8 @@ class GameState():
   deckA : list[int]
   deckB : list[int]
   battlefields : list[Battlefield]
+  cbf : Literal[0,1,2]
+  evt : list[bool]
 
 class Result:
   def __init__(self, state : Literal['ok','err'],msg : str | None = None, gameState : GameState | None = None) -> None:
@@ -39,8 +48,9 @@ class Game():
     self.totalTurn = 0
 
     self.battlefields : list[Battlefield] = []
-    self.currentBF : int = 1
+    self.currentBF : Literal[0,1,2] = 1
 
+    self.events : list[bool] = [True,True,True,False]
 
     random.shuffle(self.deckA)
     random.shuffle(self.deckB)
@@ -56,18 +66,124 @@ class Game():
     else:
       return None
     
+  def GetUnitById(self,uid : int | None):
+    for fl in self.battlefields[self.currentBF].frontlines:
+      for u in fl.targets:
+        if u.id == uid:
+          return u
+        
+  def ChangeEvent(self,eid : Literal[0,1,2,3]):
+    self.events[eid] = not self.events[eid]
+    if eid == 0:
+      pass
+    elif eid == 1:
+      if not self.events[eid]:
+        for fl in self.battlefields[0].frontlines:
+          for u in fl.targets:
+            u.atk += 2
+            u.dfns += 2
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.atk -= 1
+            u.dfns -= 1
+        for fl in self.battlefields[2].frontlines:
+          for u in fl.targets:
+            u.atk -= 1
+            u.dfns -= 1
+      else:
+        for fl in self.battlefields[0].frontlines:
+          for u in fl.targets:
+            u.atk -= 2
+            u.dfns -= 2
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.atk += 1
+            u.dfns += 1
+        for fl in self.battlefields[2].frontlines:
+          for u in fl.targets:
+            u.atk += 1
+            u.dfns += 1
+    elif eid == 2:
+      if not self.events[eid]:
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.atk -= 1
+            u.dfns -= 1
+      else:
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.atk += 1
+            u.dfns += 1
+    elif eid == 3:
+      if self.events[eid]:
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.actionCost = u.actionCost - 1 if u.actionCost >= 1 else 0
+        for fl in self.battlefields[2].frontlines:
+          for u in fl.targets:
+            u.atk -= 3
+            u.dfns -= 2
+      else:
+        for fl in self.battlefields[1].frontlines:
+          for u in fl.targets:
+            u.actionCost += 1
+        for fl in self.battlefields[2].frontlines:
+          for u in fl.targets:
+            u.atk += 3
+            u.dfns += 2
+
+
   def DrawCard(self,player : str,num : int):
     playerT = self.GetPlayer(player)
     if playerT:
       for _ in range(num):
         if len(self.deckA) != 0 :
-          temp : int = self.deckA.pop()
+          temp : HandCard = CardToHand(self.deckA.pop())
+          if (self.currentBF == 0):
+            temp.cost = temp.cost - 2 if temp.cost >= 2 else 0
           playerT.handCards.append(temp)
         else:
           if(player == 'A'):
             self.hqA -= 3
           else:
             self.hqB -= 3
+
+  def TimeWarp(self,t : Literal[0,1,2]):
+    self.currentBF = t
+
+  def Deploy(self,u : Unit,fl : int):
+    
+    if not self.events[1]: #第二次世界大战：关闭
+      if u.utl == 0:
+        u.atk += 2
+        u.dfns += 2
+      else:
+        u.atk -= 1
+        u.dfns -= 1
+    
+    if not self.events[2]: #美苏冷战：关闭
+      if u.utl == 1:
+        u.atk -= 1
+        u.dfns -= 1
+    
+    if self.events[3]: #三战：开启
+      if u.utl == 1:
+        u.actionCost -= 1
+      if u.utl == 2:
+        u.atk -= 3
+        u.dfns -= 2
+    
+    self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
+    if(FindKeyw(u,Keyword.Guard)):
+      for un in self.battlefields[self.currentBF].frontlines[fl].targets:
+        if(FindKeyw(un,Keyword.Guard) is not None):
+          un.tags.append(Tag(Keyword.Guarded))
+    
+    if(FindKeyw(u,Keyword.Deploy)):
+      ...
+    
+
+
 
   def ReceiveRecord(self):
     ...
@@ -78,6 +194,8 @@ class Game():
     result : Result | None = None
     player = entry.actorPlayer
     try:
+      if(entry.actorPlayer == 'N'):
+          raise Exception('什么叫滚木在执行操作')
       if(eType == ActionType.DrawCard):
         if(entry.target is None):
           raise Exception('未给出抽牌数量')
@@ -89,25 +207,46 @@ class Game():
         if(entry.actorId is None):
           raise Exception('不能部署滚木')
         
-        if(player == 'A' and entry.target == 0) or (player == 'B' and entry.target == 2):
-          unitCard = allCards[entry.actorId]
-          if(type(unitCard) == UnitCard):
-            newUnit = CardToUnit(unitCard)
-            newUnit.id = self.battlefields[self.currentBF].unitsNum
-            self.battlefields[self.currentBF].frontlines[entry.target].targets.append(newUnit)
-          else:
-            raise Exception('不能部署指令，啥子比。')
+        if(allCards[entry.actorId].timeline != self.currentBF): # type: ignore
+          raise Exception('禁止出现超时空战士')
+        unitCard = allCards[entry.actorId]
+        if(type(unitCard) != UnitCard):
+          raise Exception('不能部署指令，啥子比。')
+        assert type(unitCard) == UnitCard
+
+        if ((player == 'A' and entry.target == 2) or (player == 'B' and entry.target == 0)):
+          raise Exception('单位不能放对面家里')
+        elif entry.target == 1 and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) or \
+              ((player == 'A' and entry.target == 0) or (player == 'B' and entry.target == 1)):
+          
+          newUnit = CardToUnit(unitCard)
+          newUnit.id = self.battlefields[self.currentBF].unitsNum
+          self.Deploy(newUnit,entry.target)
         
-        else:
-          raise Exception('你放单位给我放好的啊')
+        else: 
+          raise Exception('不是你放单位给我放好的呀')
           
       elif(eType == ActionType.TurnEnd):
-        if(entry.actorPlayer == 'N'):
-          raise Exception('什么叫滚木的回合结束了')
+        
         self.TurnEnd(entry.actorPlayer)
       
-      elif ...:
-        ...
+      elif eType == ActionType.Attack:
+        u = self.GetUnitById(entry.actorId)
+        if(u is None):
+          raise Exception('你不能指挥滚木攻击')
+        t = self.GetUnitById(entry.target)
+        if(t is None):
+          raise Exception('你不能攻击滚木')
+        if(FindKeyw(t,Keyword.Guarded)):
+          if(u.uType not in (UnitType.bomber, UnitType.artillery)):
+            raise Exception('此单位被守护')
+        
+        atk = ClacAtk(u.tags,u.atk)
+        dmg = ClacDamage(t.tags,atk)
+        
+
+        t.dfns -= dmg
+
       
       result = Result('ok',gameState=self.GetState())
 
@@ -119,10 +258,30 @@ class Game():
     
     return result
 
+  def Check(self):
+    for bf in self.battlefields:
+      for fl in bf.frontlines:
+        f = False
+        for u in fl.targets:
+          if(u.dfns <= 0):
+            fl.targets.pop(fl.targets.index(u))
+            bf.unitsNum -= 1
+            continue
+          if FindKeyw(u,Keyword.Guard):
+            f = True
+        if not f:
+          for u in fl.targets:
+            if FindKeyw(u,Keyword.Guarded):
+              u.tags.pop(u.tags.index(Tag(Keyword.Guarded)))
+    
 
 
   def GetState(self):
-    state = GameState(self.playerA,self.playerB,self.hqA,self.hqB,self.deckA,self.deckB,self.battlefields)
+    self.Check()
+    state = GameState(self.playerA,self.playerB,\
+                      self.hqA,self.hqB,\
+                        self.deckA,self.deckB,\
+                          self.battlefields,self.currentBF,self.events)
     return state
 
 
@@ -138,10 +297,18 @@ class Game():
       self.DrawCard('B',1)
       self.playerB.apSlot += 1
       self.playerB.actionPoint = self.playerB.apSlot
+      if self.events[0] :
+        self.playerB.actionPoint -= 1
+      if self.events[2] :
+        self.playerB.actionPoint += 2
     else:
       self.DrawCard('A',1)
       self.playerA.apSlot += 1
       self.playerA.actionPoint = self.playerA.apSlot
+      if self.events[0] :
+        self.playerA.actionPoint -= 1
+      if self.events[2] :
+        self.playerA.actionPoint += 2
     ...
     
 
