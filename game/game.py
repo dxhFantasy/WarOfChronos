@@ -39,6 +39,7 @@ class Game():
     self.totalTurn = 0
 
     self.battlefields : list[Battlefield] = []
+    self.currentBF : int = 1
 
 
     random.shuffle(self.deckA)
@@ -73,18 +74,34 @@ class Game():
     #self.ProcessRecord(...)
   
   def ProcessRecord(self,entry : LogEntry):
-    type = entry.actionType
+    eType = entry.actionType
     result : Result | None = None
+    player = entry.actorPlayer
     try:
-      if(type == ActionType.DrawCard):
+      if(eType == ActionType.DrawCard):
         if(entry.target is None):
           raise Exception('未给出抽牌数量')
         self.DrawCard(entry.actorPlayer,entry.target)
-      elif(type == ActionType.PlayCard):
+      elif(eType == ActionType.UseCommand):
         
         ...# 重点
+      elif(eType == ActionType.Deploy):
+        if(entry.actorId is None):
+          raise Exception('不能部署滚木')
         
-      elif(type == ActionType.TurnEnd):
+        if(player == 'A' and entry.target == 0) or (player == 'B' and entry.target == 2):
+          unitCard = allCards[entry.actorId]
+          if(type(unitCard) == UnitCard):
+            newUnit = CardToUnit(unitCard)
+            newUnit.id = self.battlefields[self.currentBF].unitsNum
+            self.battlefields[self.currentBF].frontlines[entry.target].targets.append(newUnit)
+          else:
+            raise Exception('不能部署指令，啥子比。')
+        
+        else:
+          raise Exception('你放单位给我放好的啊')
+          
+      elif(eType == ActionType.TurnEnd):
         if(entry.actorPlayer == 'N'):
           raise Exception('什么叫滚木的回合结束了')
         self.TurnEnd(entry.actorPlayer)
