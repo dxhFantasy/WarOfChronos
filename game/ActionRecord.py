@@ -5,7 +5,8 @@ from enum import Enum
 
 class ActionType(Enum):
   DrawCard = '抽牌'
-  PlayCard = '出牌'
+  UseCommand = '使用指令'
+  Deploy = '部署'
   #TakeDamage = '受到伤害'
   Attack = '攻击'
   TurnStart = '回合开始'
@@ -22,7 +23,7 @@ class LogEntry:
   actorPlayer : str    #A/B方操作
   actionType : ActionType 
   actorId : int | None #发起该操作的单位Id 若为指令则为指令卡牌id
-  target : int | None #操作目标 如攻击目标
+  target : int | None #操作目标 如攻击目标 抽牌数量 部署单位的目标阵线
 
 if __name__ == '__main__':
   ...
