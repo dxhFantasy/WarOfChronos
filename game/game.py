@@ -3,6 +3,7 @@ from Player import *
 from Cards import *
 from ActionRecord import *
 from typing import Any,Literal
+from copy import deepcopy
 
 
 def FindKeyw(u : Unit,k : Keyword):
@@ -278,10 +279,17 @@ class Game():
 
   def GetState(self):
     self.Check()
-    state = GameState(self.playerA,self.playerB,\
-                      self.hqA,self.hqB,\
-                        self.deckA,self.deckB,\
-                          self.battlefields,self.currentBF,self.events)
+    state = GameState(
+      deepcopy(self.playerA),
+      deepcopy(self.playerB),\
+      self.hqA,
+      self.hqB,\
+      deepcopy(self.deckA),
+      deepcopy(self.deckB),\
+      deepcopy(self.battlefields),
+      self.currentBF,
+      deepcopy(self.events)
+    )
     return state
 
 
