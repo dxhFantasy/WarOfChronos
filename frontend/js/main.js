@@ -110,7 +110,12 @@ function enterGame() {
     $("#game").removeClass("hidden");
     $("#ready-modal").removeClass("active");
 }
-
+const jobs = {
+    "dxhFantasy": "主策划/游戏设计",
+    "lwjyreq": "前端网页/联机功能",
+    "🌙 moon": "美术设计",
+    "箐川" : "卡牌设计"
+}
 $(document).ready(() => {
     getAuthor().then(() => {
         authorCache.forEach((author) => {
@@ -128,7 +133,7 @@ $(document).ready(() => {
             <div class="author-info">
 
                 <h5 class="author-name">
-                    @${author.login} · ${author.login == "dxhFantasy" ? "主策划/游戏设计" : "前端网页/联机功能"}
+                    @${author.login} · ${jobs[author.login]}
                 </h5>
 
                 <a 
@@ -144,11 +149,39 @@ $(document).ready(() => {
         </li>            
         `;
         $("#author-list").append(authorItem);
-        })
+    });
+    let ctbrs = {
+        "🌙 moon" : "assets/avatars/guer.jpg",
+        "箐川" : "assets/avatars/pxy.jpg"
+    }
+    for (let name in ctbrs) {
+        let authorItem = `
+            <li class="author-item">
+
+            <img 
+                src="${ctbrs[name]}" 
+                class="rounded-circle"
+                width=60
+                height=60
+                alt="${name}"
+            >
+
+            <div class="author-info">
+
+                <h5 class="author-name">
+                    @${name} · ${jobs[name]}
+                </h5>
+
+            </div>
+
+        </li>            
+        `;
+        $("#author-list").append(authorItem);
+    }
+
     }).catch((_) => {
         let authorItem = `
         拉取作者信息失败`
         $("#author-list").append(authorItem);
     })
 })
-console.log(createCard(testCard))
