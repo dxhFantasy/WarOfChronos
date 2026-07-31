@@ -29,3 +29,10 @@ function showNotice(
         },250);
     },2000);
 }
+function showBattleMessage(text, time=2000){
+    $(".message-bar").text(text);
+    $("#battle-message").removeClass("hidden");
+    setTimeout(()=>{
+        $("#battle-message").addClass("hidden");
+    },time);
+}
