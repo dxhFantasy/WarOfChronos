@@ -66,7 +66,7 @@ class Game():
     random.shuffle(self.playerA.deck)
     random.shuffle(self.playerB.deck)
 
-  def init_draw(self):
+  def InitDraw(self):
     self.DrawCard('A',5)
     self.DrawCard('B',6)
     state = self.GetState()
