@@ -102,6 +102,7 @@ class Room:
             "type": "game_start",
             "room_id": self.room_id,
         })
+        await self.game_session.start_game()
 
     async def start_countdown(self):
         try:

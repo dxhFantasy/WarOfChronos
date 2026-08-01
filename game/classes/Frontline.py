@@ -1,4 +1,4 @@
-from classes.Target import *
+from ..classes.Target import *
 from dataclasses import dataclass,field
 from ..Cards import *
 
