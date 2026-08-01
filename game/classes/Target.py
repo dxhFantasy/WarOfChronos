@@ -62,6 +62,3 @@ def ClacAtk(tags : list[Tag] ,baseAtk : int):
   
 
 
-class CommandCard(Card):
-  def __init__(self, cost_: int, tags_: list[Tag], name_ : str, owner_ : str) -> None:
-    super().__init__(cost_, tags_, name_, owner_)
