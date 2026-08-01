@@ -1,7 +1,7 @@
-from Battlefield import *
-from Player import *
-from Cards import *
-from ActionRecord import *
+from .Battlefield import *
+from .Player import *
+from .Cards import *
+from .ActionRecord import *
 from typing import Any,Literal
 from copy import deepcopy
 
@@ -12,16 +12,23 @@ def FindKeyw(u : Unit,k : Keyword):
       return u.tags.index(t)
   return None
 
+A = 0
+B = 1
+C = 2
+
+HQ_A = -1
+HQ_B = -2
+
+E1 = 0
+E2 = 1
+E3 = 2
+E4 = 3
 
 
 @dataclass
 class GameState():
   playerA : Player
   playerB : Player
-  hqA : int
-  hqB : int
-  deckA : list[int]
-  deckB : list[int]
   battlefields : list[Battlefield]
   cbf : Literal[0,1,2]
   evt : list[bool]
@@ -36,25 +43,28 @@ class Result:
 
 class Game():
   def __init__(self) -> None:
-    self.playerA : Player = Player(0,0,[])
-    self.playerB : Player = Player(0,0,[])
-    
-    self.deckA : list[int] = cardIds[0:len(cardIds)//2-1]
-    self.deckB : list[int] = cardIds[len(cardIds)//2:len(cardIds)//2-1]
+    self.playerA : Player = Player(0,0,[],[],20)
+    self.playerB : Player = Player(0,0,[],[],20)
 
-    self.hqA = 20
-    self.hqB = 20
+
+
+    self.playerA.deck = cardIds[0:len(cardIds)//2-1]
+    self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)//2-1]
+
+
 
     self.currentPlayer = 'A'
     self.totalTurn = 0
 
-    self.battlefields : list[Battlefield] = []
+    self.battlefields : list[Battlefield] = [Battlefield(0,[Frontline(6),Frontline(4),Frontline(6)])]
+    self.battlefields *= 3
+
     self.currentBF : Literal[0,1,2] = 1
 
     self.events : list[bool] = [True,True,True,False]
 
-    random.shuffle(self.deckA)
-    random.shuffle(self.deckB)
+    random.shuffle(self.playerA.deck)
+    random.shuffle(self.playerB.deck)
 
     self.DrawCard('A',5)
     self.DrawCard('B',6)
@@ -75,60 +85,60 @@ class Game():
         
   def ChangeEvent(self,eid : Literal[0,1,2,3]):
     self.events[eid] = not self.events[eid]
-    if eid == 0:
+    if eid == E1:
       pass
-    elif eid == 1:
+    elif eid == E2:
       if not self.events[eid]:
-        for fl in self.battlefields[0].frontlines:
+        for fl in self.battlefields[A].frontlines:
           for u in fl.targets:
             u.atk += 2
             u.dfns += 2
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.atk -= 1
             u.dfns -= 1
-        for fl in self.battlefields[2].frontlines:
+        for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
             u.atk -= 1
             u.dfns -= 1
       else:
-        for fl in self.battlefields[0].frontlines:
+        for fl in self.battlefields[A].frontlines:
           for u in fl.targets:
             u.atk -= 2
             u.dfns -= 2
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.atk += 1
             u.dfns += 1
-        for fl in self.battlefields[2].frontlines:
+        for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
             u.atk += 1
             u.dfns += 1
-    elif eid == 2:
+    elif eid == E3:
       if not self.events[eid]:
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.atk -= 1
             u.dfns -= 1
       else:
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.atk += 1
             u.dfns += 1
-    elif eid == 3:
+    elif eid == E4:
       if self.events[eid]:
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.actionCost = u.actionCost - 1 if u.actionCost >= 1 else 0
-        for fl in self.battlefields[2].frontlines:
+        for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
             u.atk -= 3
             u.dfns -= 2
       else:
-        for fl in self.battlefields[1].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.actionCost += 1
-        for fl in self.battlefields[2].frontlines:
+        for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.atk += 3
             u.dfns += 2
@@ -138,23 +148,20 @@ class Game():
     playerT = self.GetPlayer(player)
     if playerT:
       for _ in range(num):
-        if len(self.deckA) != 0 :
-          temp : HandCard = CardToHand(self.deckA.pop())
-          if (self.currentBF == 0):
+        if len(playerT.deck) != 0 :
+          temp : HandCard = CardToHand(playerT.deck.pop())
+          if (self.currentBF == 0) and self.events[3]:
             temp.cost = temp.cost - 2 if temp.cost >= 2 else 0
           playerT.handCards.append(temp)
         else:
-          if(player == 'A'):
-            self.hqA -= 3
-          else:
-            self.hqB -= 3
+          playerT.hq -= 3
 
   def TimeWarp(self,t : Literal[0,1,2]):
     self.currentBF = t
 
   def Deploy(self,u : Unit,fl : int):
     
-    if not self.events[1]: #第二次世界大战：关闭
+    if not self.events[E2]: #第二次世界大战：关闭
       if u.utl == 0:
         u.atk += 2
         u.dfns += 2
@@ -162,12 +169,12 @@ class Game():
         u.atk -= 1
         u.dfns -= 1
     
-    if not self.events[2]: #美苏冷战：关闭
+    if not self.events[E3]: #美苏冷战：关闭
       if u.utl == 1:
         u.atk -= 1
         u.dfns -= 1
     
-    if self.events[3]: #三战：开启
+    if self.events[E4]: #三战：开启
       if u.utl == 1:
         u.actionCost -= 1
       if u.utl == 2:
@@ -184,6 +191,25 @@ class Game():
       ...
     
 
+  def Attack(self,u : Unit ,tid : int):
+
+    if(tid in (HQ_A, HQ_B)): #攻击总部
+      atk = ClacAtk(u.tags,u.atk)
+      if tid == HQ_A:
+        self.playerA.hq -= atk
+      else:
+        self.playerB.hq -= atk
+    else:                             #攻击单位
+      t = self.GetUnitById(tid)
+      if(t is None):
+        raise Exception('你不能攻击滚木')
+      if(FindKeyw(t,Keyword.Guarded)):
+        if(u.uType not in (UnitType.bomber, UnitType.artillery)):
+          raise Exception('此单位被守护')
+      
+      atk = ClacAtk(u.tags,u.atk)
+      dmg = ClacDamage(t.tags,atk)
+      t.dfns -= dmg
 
 
   def ReceiveRecord(self):
@@ -235,18 +261,8 @@ class Game():
         u = self.GetUnitById(entry.actorId)
         if(u is None):
           raise Exception('你不能指挥滚木攻击')
-        t = self.GetUnitById(entry.target)
-        if(t is None):
-          raise Exception('你不能攻击滚木')
-        if(FindKeyw(t,Keyword.Guarded)):
-          if(u.uType not in (UnitType.bomber, UnitType.artillery)):
-            raise Exception('此单位被守护')
         
-        atk = ClacAtk(u.tags,u.atk)
-        dmg = ClacDamage(t.tags,atk)
         
-
-        t.dfns -= dmg
 
       
       result = Result('ok',gameState=self.GetState())
@@ -280,14 +296,10 @@ class Game():
   def GetState(self):
     self.Check()
     state = GameState(
-      deepcopy(self.playerA),
+      deepcopy(self.playerA),\
       deepcopy(self.playerB),\
-      self.hqA,
-      self.hqB,\
-      deepcopy(self.deckA),
-      deepcopy(self.deckB),\
-      deepcopy(self.battlefields),
-      self.currentBF,
+      deepcopy(self.battlefields),\
+      self.currentBF,\
       deepcopy(self.events)
     )
     return state
@@ -336,7 +348,7 @@ def debug(arg : Any):
   print(arg)
 
 if __name__ == '__main__':
-  a = Player(0,0,[])
+  a = Player(0,0,[],[],114514)
   b = a
   b.apSlot += 1
   debug(a.apSlot)

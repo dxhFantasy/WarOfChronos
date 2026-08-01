@@ -8,7 +8,7 @@ from .game_session import GameSession
 from fastapi import WebSocket
 from typing import Literal
 
-rooms: dict[str, Room] = {}
+rooms = {}
 class Player:
     """
     将 websocket 封装为 Player 对象，便于管理玩家状态和发送消息
