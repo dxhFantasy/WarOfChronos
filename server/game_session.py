@@ -1,11 +1,20 @@
 '''实现游戏逻辑与服务器的互通'''
 ##############################
 #消息格式提醒
-#A方总部的id是-1， B方是-2
+#A方总部的id是-1， B方是-2(对于Card而言)
 ##############################
-from game.game import Game, LogEntry, GameState, HandCard, Battlefield, Frontline
+from game.game import (
+    Game, 
+    LogEntry, 
+    GameState, 
+    HandCard, 
+    Battlefield, 
+    Frontline, 
+    Unit
+)
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Any, Literal
+from typing import Coroutine
 import json
 if TYPE_CHECKING:
     from room import Player as PlayerConnection
@@ -17,9 +26,9 @@ class GameSession:
         self, 
         conn_a: PlayerConnection,
         conn_b: PlayerConnection,
-        broadcaster: Callable[[dict[str, Any]], None]
+        broadcaster: Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
     ) -> None:
-        self.connections = {
+        self.connections: dict[Literal["A", "B"], PlayerConnection] = {
             "A": conn_a,
             "B": conn_b,
         }
@@ -29,7 +38,7 @@ class GameSession:
 
     async def handle_action(
             self,
-            player_side: str,
+            player_side: Literal["A", "B"],
             record: LogEntry
     ):
         ...
@@ -40,6 +49,21 @@ class GameSession:
                 "cost": hc.cost,
                 "id": hc.id,
                 "extTags": hc.extraTags
+            })
+        return l
+    def handle_units(self, units: list[Unit]) -> list[dict[str, Any]]:
+        l = []
+        for u in units:
+            l.append({
+                "id": u.id,
+                "cardId": u.cardId,
+                "atk": u.atk,
+                "dfns": u.dfns,
+                "cost": u.cost,
+                "actionCost": u.actionCost,
+                "tags": [t.keyword.value for t in u.tags],
+                "uType": u.uType,
+                "utl": u.utl
             })
         return l
     def handle_frontlines(self, frontlines: list[Frontline]):
@@ -81,6 +105,17 @@ class GameSession:
         state_dict["cur_bf"] = state.cbf
         state_dict["events"] = state.evt
         state_dict["battlefields"] = self.handle_bf(state.battlefields)
-        return json.dumps(state_dict)
+        return state_dict
+    async def broadcast_state(self):
+        state = self.game.GetState()
+        await self.connections["A"].send({
+            json.dumps(self.state_jsonify(state, "A"))
+        })
+        await self.connections["B"].send({
+            json.dumps(self.state_jsonify(state, "B"))
+        })
+    async def broadcast_message(self, message: dict[str, Any]):
+        await self.broadcaster(message)
+    
 if __name__ == "__main__":
     ...

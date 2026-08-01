@@ -4,6 +4,9 @@
 import random
 import string
 import asyncio
+from .game_session import GameSession
+from fastapi import WebSocket
+from typing import Literal
 
 rooms: dict[str, Room] = {}
 class Player:
@@ -11,9 +14,10 @@ class Player:
     将 websocket 封装为 Player 对象，便于管理玩家状态和发送消息
     """
     def __init__(self, websocket):
-        self.websocket = websocket
+        self.websocket: WebSocket = websocket
         self.ready = False
         self.room: Room | None = None
+        self.side: Literal["A", "B"] | None = None  # 玩家在房间中的位置，"A" 或 "B"
     async def send(self, data):
         await self.websocket.send_json(data)
 class Room:
@@ -25,10 +29,15 @@ class Room:
         self.players: list[Player] = []
         self.state = "WAITING"
         self.countdown_task = None
+        self.game_session: GameSession | None = None
 
     async def add_player(self, player: Player):
         self.players.append(player)
         player.room = self
+        if len(self.players) == 1:
+            player.side = "A"
+        elif len(self.players) == 2:
+            player.side = "B"
         if self.is_full():
             self.state = "READY_CHECK"
 
@@ -83,6 +92,12 @@ class Room:
         if self.state == "IN_PROGRESS":
             return
         self.state = "IN_PROGRESS"
+
+        self.game_session = GameSession(
+            self.players[0],
+            self.players[1],
+            self.broadcast
+        )
         await self.broadcast({
             "type": "game_start",
             "room_id": self.room_id,

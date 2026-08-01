@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 import json
-from room import (
+from .room import (
     rooms,
     create_room,
     Player,
