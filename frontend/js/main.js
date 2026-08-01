@@ -80,7 +80,7 @@ $("#about-return").click(() => {
 })
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
-
+    console.log("Received message:", data);
     if( data.type === "room_created" ) {
         let roomId = data.room_id;
         showRoomUI(roomId);
@@ -102,6 +102,10 @@ socket.onmessage = (event) => {
     if (data.type === "error"){
         showNotice(data.message, "warning")
     }
+    if (data.type === "show_message") {
+        console.log("Battle message:", data.message)
+        showBattleMessage(data.message)
+    }
 }
 
 function enterGame() {
@@ -116,6 +120,14 @@ const jobs = {
     "🌙 moon": "美术设计",
     "箐川" : "卡牌设计"
 }
+$("#player-hand").click(function(){
+    $("#hand-overlay")
+        .addClass("active");
+});
+$("#close-hand").click(function(){
+    $("#hand-overlay")
+        .removeClass("active");
+});
 $(document).ready(() => {
     getAuthor().then(() => {
         authorCache.forEach((author) => {

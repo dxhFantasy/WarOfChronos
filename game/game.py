@@ -66,9 +66,11 @@ class Game():
     random.shuffle(self.playerA.deck)
     random.shuffle(self.playerB.deck)
 
+  def init_draw(self):
     self.DrawCard('A',5)
     self.DrawCard('B',6)
-
+    state = self.GetState()
+    return (state.playerA.handCards, state.playerB.handCards)
 
 
   def GetPlayer(self,player : str):
@@ -303,13 +305,6 @@ class Game():
       deepcopy(self.events)
     )
     return state
-
-
-  def SendState(self):
-    state = self.GetState()
-    if(state):
-      ...
-    ...
 
 
   def TurnStart(self, lastTurnPlayer : str) -> None:

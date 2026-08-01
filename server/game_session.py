@@ -91,15 +91,15 @@ class GameSession:
         if view == 'A':
             state_dict['my_act_point'] = state.playerA.actionPoint
             state_dict["enemy_act_point"] = state.playerB.actionPoint
-            state_dict["my_hq"] = state.hqA
-            state_dict["enemy_hq"] = state.hqB
+            state_dict["my_hq"] = state.playerA.hq
+            state_dict["enemy_hq"] = state.playerB.hq
             state_dict["my_handcards"] = self.handle_handcards(state.playerA.handCards)
             state_dict["enemy_hc_counts"] = len(state.playerB.handCards)
         else:
             state_dict['my_act_point'] = state.playerB.actionPoint
             state_dict["enemy_act_point"] = state.playerA.actionPoint
-            state_dict["my_hq"] = state.hqB
-            state_dict["enemy_hq"] = state.hqA
+            state_dict["my_hq"] = state.playerB.hq
+            state_dict["enemy_hq"] = state.playerA.hq
             state_dict["my_handcards"] = self.handle_handcards(state.playerB.handCards)
             state_dict["enemy_hc_counts"] = len(state.playerA.handCards)
         state_dict["cur_bf"] = state.cbf
@@ -116,6 +116,13 @@ class GameSession:
         })
     async def broadcast_message(self, message: dict[str, Any]):
         await self.broadcaster(message)
+    async def start_game(self):
+        print("Game session started.")
+        print(f"{self.broadcaster}")
+        await self.broadcast_message({
+            "type": "show_message",
+            "message": "第 1 回合"
+        })
     
 if __name__ == "__main__":
     ...

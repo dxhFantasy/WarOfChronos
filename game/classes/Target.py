@@ -1,5 +1,5 @@
-from classes.Card import *
-from classes.Tags import *
+from ..classes.Card import *
+from ..classes.Tags import *
 from enum import Enum
 from typing import Literal
 

@@ -38,7 +38,7 @@ connections = []
 @app.get("/")
 def index():
     return FileResponse(
-        "../frontend/index.html"
+        BASE_DIR / "frontend" / "index.html" 
     )
 
 # WebSocket连接

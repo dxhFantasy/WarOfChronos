@@ -1,4 +1,4 @@
-from classes.Frontline import*
+from .classes.Frontline import*
 from dataclasses import dataclass,field
 
 @dataclass

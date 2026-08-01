@@ -1,12 +1,3 @@
-const testCard = {
-    cost : "3",
-    type : "类型",
-    name : "卡牌名",
-    image : "assets/testcard2.jpg",
-    attack: 3,
-    hp : 10,
-    effect : "效果"
-}
 function createCard(cardData){
     return `
     <div class="card">
@@ -28,7 +19,7 @@ function createCard(cardData){
             </span>
 
             <span>
-                ♥ ${cardData.hp}
+                ♥ ${cardData.defense}
             </span>
         </div>
         <div class="card-keywords">
@@ -36,4 +27,29 @@ function createCard(cardData){
         </div>
     </div>
     `;
+}
+function renderCompactHand(cards){
+
+    let gap = Math.min(
+        35,
+        280 / cards.length
+    );
+
+
+    $("#player-hand").empty();
+
+
+    cards.forEach((card,index)=>{
+        let div=$("<div>");
+        div.addClass(
+            "compact-card"
+        );
+        div.css({
+            left:
+            index * gap,
+            zIndex:index
+        });
+        $("#player-hand")
+            .append(div);
+    });
 }

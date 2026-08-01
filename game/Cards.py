@@ -1,6 +1,5 @@
-from classes.Tags import *
-from classes.Target import *
-from classes.Command import *
+from .classes.Target import *
+from .classes.Command import *
 from dataclasses import dataclass
 import random
 
@@ -10,7 +9,7 @@ UnitCard(4,2,[Tag(Keyword.Blitz),Tag(Keyword.Passive,'对战坦克时，具有�
             3,1,'2S38\"偏瘫\"','N',UnitType.tank,2)
 ]
 
-cardIds = list(range(1,len(allCards)+1))
+cardIds = list(range(0,len(allCards)))
 
 cardIds *= 40
 
