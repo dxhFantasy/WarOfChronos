@@ -29,16 +29,11 @@ function createCard(cardData){
     `;
 }
 function renderCompactHand(cards){
-
     let gap = Math.min(
         35,
         280 / cards.length
     );
-
-
     $("#player-hand").empty();
-
-
     cards.forEach((card,index)=>{
         let div=$("<div>");
         div.addClass(

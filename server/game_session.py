@@ -105,15 +105,16 @@ class GameSession:
         state_dict["cur_bf"] = state.cbf
         state_dict["events"] = state.evt
         state_dict["battlefields"] = self.handle_bf(state.battlefields)
+        state_dict["type"] = "update_state"
         return state_dict
     async def broadcast_state(self):
         state = self.game.GetState()
-        await self.connections["A"].send({
-            json.dumps(self.state_jsonify(state, "A"))
-        })
-        await self.connections["B"].send({
-            json.dumps(self.state_jsonify(state, "B"))
-        })
+        await self.connections["A"].send(
+            self.state_jsonify(state, "A")
+        )
+        await self.connections["B"].send(
+            self.state_jsonify(state, "B")
+        )
     async def broadcast_message(self, message: dict[str, Any]):
         await self.broadcaster(message)
     async def start_game(self):
@@ -123,6 +124,7 @@ class GameSession:
             "type": "show_message",
             "message": "第 1 回合"
         })
+        await self.broadcast_state()
     
 if __name__ == "__main__":
     ...
