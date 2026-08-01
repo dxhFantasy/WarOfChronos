@@ -7,7 +7,7 @@ class ActionType(Enum):
   DrawCard = '抽牌'
   UseCommand = '使用指令'
   Deploy = '部署'
-  #TakeDamage = '受到伤害'
+  TakeDamage = '受到伤害'
   Attack = '攻击'
   TurnStart = '回合开始'
   TurnEnd = '回合结束'
