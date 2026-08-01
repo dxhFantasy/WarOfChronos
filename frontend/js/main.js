@@ -106,8 +106,17 @@ socket.onmessage = (event) => {
         console.log("Battle message:", data.message)
         showBattleMessage(data.message)
     }
+    if (data.type === "update_state") {
+        updateGameState(data)
+    }
 }
-
+function updateGameState(stateData) {
+    console.log("Updating game state:", stateData);
+    $("#my-act-point").text(`行动点: ${stateData.my_act_point}`);
+    $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
+    $("#my-hq-hp").text(`HP: ${stateData.my_hq}`);
+    $("#enemy-hq-hp").text(`HP: ${stateData.enemy_hq}`);
+}
 function enterGame() {
     $("#menu").addClass("hidden");
     $("#room-modal").removeClass("active");
