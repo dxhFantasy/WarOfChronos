@@ -28,6 +28,8 @@ E2 = 1
 E3 = 2
 E4 = 3
 
+PLAYER_A : str= 'A'
+PLAYER_B : str= 'B'
 
 @dataclass
 class GameState():
@@ -172,7 +174,7 @@ class Game():
   def TimeWarp(self,t : Literal[0,1,2]):
     self.currentBF = t
 
-  def Deploy(self,u : Unit,fl : int):
+  def Deploy(self,u : Unit,fl : int, player : Literal[PLAYER_A, PLAYER_B]):
     
     if not self.events[E2]: #第二次世界大战：关闭
       if u.utl == 0:
@@ -194,13 +196,16 @@ class Game():
         u.atk -= 3
         u.dfns -= 2
     
+    u.owner = player
     self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
-    if(FindKeyw(u,Keyword.Guard)):
+    
+
+    if(FindKeyw(u,Keyword.Guard) is not None):
       for un in self.battlefields[self.currentBF].frontlines[fl].targets:
         if(FindKeyw(un,Keyword.Guard) is not None):
           un.tags.append(Tag(Keyword.Guarded))
     
-    if(FindKeyw(u,Keyword.Deploy)):
+    if(FindKeyw(u,Keyword.Deploy) is not None):
       ...
     
 
@@ -229,6 +234,35 @@ class Game():
         fAtk = t.atk
         dmg = ClacDamage(u.tags,fAtk)
         u.dfns -= dmg
+
+  def CheckCondition(self, cdtn : ChooseCondition, tid : int):
+    ...
+
+  def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
+    es = command.effects
+    if 
+
+    for e in es:
+      flag = False
+      if e.triggerCondition:
+        for triCdtn in e.triggerCondition:
+          if triCdtn.cdtnType == TriggerConditionType.EventsHappend:
+            assert type(triCdtn.target) == int
+            if self.events[triCdtn.target]:
+              flag = True
+          if triCdtn.cdtnType == TriggerConditionType.HasUnitsOnField:
+            assert type(triCdtn.target) == ChooseCondition
+            for fl in self.battlefields[self.currentBF].frontlines:
+              find = False
+              for u in fl.targets:
+                if self.CheckCondition(triCdtn.target, u.id):
+                  find = True
+                  break
+              if find:
+                break
+        if flag:
+          ...
+
 
 
   def ReceiveRecord(self):
