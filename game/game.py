@@ -19,11 +19,17 @@ C = 2
 HQ_A = -1
 HQ_B = -2
 
+DA = 0
+F = 1
+DB = 2
+
 E1 = 0
 E2 = 1
 E3 = 2
 E4 = 3
 
+PLAYER_A : str= 'A'
+PLAYER_B : str= 'B'
 
 @dataclass
 class GameState():
@@ -84,7 +90,14 @@ class Game():
       for u in fl.targets:
         if u.id == uid:
           return u
-        
+  
+  def GetFlById(self,uid : int | None):
+    for fl in self.battlefields[self.currentBF].frontlines:
+      for u in fl.targets:
+        if u.id == uid:
+          return self.battlefields[self.currentBF].frontlines.index(fl)
+  
+  
   def ChangeEvent(self,eid : Literal[0,1,2,3]):
     self.events[eid] = not self.events[eid]
     if eid == E1:
@@ -161,7 +174,7 @@ class Game():
   def TimeWarp(self,t : Literal[0,1,2]):
     self.currentBF = t
 
-  def Deploy(self,u : Unit,fl : int):
+  def Deploy(self,u : Unit,fl : int, player : Literal[PLAYER_A, PLAYER_B]):
     
     if not self.events[E2]: #第二次世界大战：关闭
       if u.utl == 0:
@@ -183,17 +196,20 @@ class Game():
         u.atk -= 3
         u.dfns -= 2
     
+    u.owner = player
     self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
-    if(FindKeyw(u,Keyword.Guard)):
+    
+
+    if(FindKeyw(u,Keyword.Guard) is not None):
       for un in self.battlefields[self.currentBF].frontlines[fl].targets:
         if(FindKeyw(un,Keyword.Guard) is not None):
           un.tags.append(Tag(Keyword.Guarded))
     
-    if(FindKeyw(u,Keyword.Deploy)):
+    if(FindKeyw(u,Keyword.Deploy) is not None):
       ...
     
 
-  def Attack(self,u : Unit ,tid : int):
+  def Attack(self,u : Unit ,tid : int | None):
 
     if(tid in (HQ_A, HQ_B)): #攻击总部
       atk = ClacAtk(u.tags,u.atk)
@@ -212,6 +228,41 @@ class Game():
       atk = ClacAtk(u.tags,u.atk)
       dmg = ClacDamage(t.tags,atk)
       t.dfns -= dmg
+
+      #受到反击伤害
+      if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
+        fAtk = t.atk
+        dmg = ClacDamage(u.tags,fAtk)
+        u.dfns -= dmg
+
+  def CheckCondition(self, cdtn : ChooseCondition, tid : int):
+    ...
+
+  def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
+    es = command.effects
+    if 
+
+    for e in es:
+      flag = False
+      if e.triggerCondition:
+        for triCdtn in e.triggerCondition:
+          if triCdtn.cdtnType == TriggerConditionType.EventsHappend:
+            assert type(triCdtn.target) == int
+            if self.events[triCdtn.target]:
+              flag = True
+          if triCdtn.cdtnType == TriggerConditionType.HasUnitsOnField:
+            assert type(triCdtn.target) == ChooseCondition
+            for fl in self.battlefields[self.currentBF].frontlines:
+              find = False
+              for u in fl.targets:
+                if self.CheckCondition(triCdtn.target, u.id):
+                  find = True
+                  break
+              if find:
+                break
+        if flag:
+          ...
+
 
 
   def ReceiveRecord(self):
@@ -263,7 +314,16 @@ class Game():
         u = self.GetUnitById(entry.actorId)
         if(u is None):
           raise Exception('你不能指挥滚木攻击')
-        
+        ufl = self.GetFlById(entry.actorId)
+        tfl = self.GetFlById(entry.target)
+        uType = u.uType
+        if(uType in (UnitType.bomber, UnitType.artillery, UnitType.fighter)):
+          self.Attack(u,entry.target)
+        else:
+          if(ufl in (DA, DB) and tfl in (DA, DB)):
+            raise Exception('攻击距离不足')
+          else:
+            self.Attack(u,entry.target)
         
 
       
