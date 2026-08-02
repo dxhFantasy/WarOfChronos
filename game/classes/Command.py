@@ -19,24 +19,28 @@ class cmp(Enum):              #字面意思
   Le = '小于'
   NLe = '不小于'
 
+
+
+HQ = 114514
 @dataclass
 class ChooseCondition():      #选择目标的条件
-  tid : int | None #可能要打总部
-  atk : tuple[cmp,int] | None
-  dfns : tuple[cmp,int] | None
-  tag : Tag | None
-  cost : tuple[cmp,int] | None
-  actCost : tuple[cmp,int] | None
-  frontline : Literal[0,1,2]
-  timeline : Literal[0,1,2]
+  tid : int | None = None #可能要打总部
+  atk : tuple[cmp,int] | None = None
+  dfns : tuple[cmp,int] | None = None
+  tag : Tag | None = None
+  cost : tuple[cmp,int] | None = None
+  actCost : tuple[cmp,int] | None = None
+  frontline : Literal[0,1,2] | None = None
+  timeline : Literal[0,1,2] | None = None
 
 
 @dataclass
 class TargetChoose():         #目标指示器
-  condition : ChooseCondition | None
   owner : TargetOwner
   num : int   #刚刚的ALL
   Random : bool
+  condition : ChooseCondition | None = None
+  
 
 class TriggerConditionType(Enum):#效果触发条件
   HasUnitsOnField = '场上有单位'
@@ -46,7 +50,7 @@ class TriggerConditionType(Enum):#效果触发条件
 @dataclass
 class TriggerCondition():        #条件指示器
   cdtnType :TriggerConditionType
-  target : TargetChoose | None
+  target : TargetChoose | None = None
 
 
 class EffectType(Enum):          #字面意思
@@ -80,17 +84,18 @@ class EndTime():
 
 @dataclass
 class EffectData():
-  triggerCondition : list[TriggerCondition] | None
   target : TargetChoose | int #考虑到有时要把某张牌加入手牌/洗入卡组,加int指示卡牌id
   effect : EffectType
   value : int | Tag | tuple[int,int] #+x+x的两个x
-  endTime : EndTime
+  endTime : EndTime | None = None
+  triggerCondition : list[TriggerCondition] | None = None
 
 
 
 
 
 class CommandCard(Card):
-  def __init__(self, cost_: int, tags_: list[Tag], name_ : str, owner_ : str, effects_ : list[EffectData], dect : str) -> None:
-    super().__init__(cost_, tags_, name_, owner_)
+  def __init__(self, cost_: int, tags_: list[Tag], name_ : str, owner_ : str, effects_ : list[EffectData], dect_ : str, tl : Literal[0,1,2]) -> None:
+    super().__init__(cost_, tags_, name_, owner_, tl)
     self.effects = effects_
+    self.dect = dect_
