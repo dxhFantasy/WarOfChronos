@@ -32,6 +32,8 @@ class ChooseCondition():      #选择目标的条件
   actCost : tuple[cmp,int] | None = None
   frontline : Literal[0,1,2] | None = None
   timeline : Literal[0,1,2] | None = None
+  cmpT : cmp = cmp.Eq
+  value : int = -1
 
 
 @dataclass
@@ -40,7 +42,6 @@ class TargetChoose():         #目标指示器
   num : int   #刚刚的ALL
   Random : bool
   condition : ChooseCondition | None = None
-  
 
 class TriggerConditionType(Enum):#效果触发条件
   HasUnitsOnField = '场上有单位'
@@ -50,7 +51,7 @@ class TriggerConditionType(Enum):#效果触发条件
 @dataclass
 class TriggerCondition():        #条件指示器
   cdtnType :TriggerConditionType
-  target : TargetChoose | None = None
+  target : TargetChoose | int | None = None # int用于指示事件id
 
 
 class EffectType(Enum):          #字面意思
@@ -84,7 +85,7 @@ class EndTime():
 
 @dataclass
 class EffectData():
-  target : TargetChoose | int #考虑到有时要把某张牌加入手牌/洗入卡组,加int指示卡牌id
+  target : TargetChoose #考虑到有时要把某张牌加入手牌/洗入卡组,加int指示卡牌id （丢到value了
   effect : EffectType
   value : int | Tag | tuple[int,int] #+x+x的两个x
   endTime : EndTime | None = None
