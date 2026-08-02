@@ -19,6 +19,10 @@ C = 2
 HQ_A = -1
 HQ_B = -2
 
+DA = 0
+F = 1
+DB = 2
+
 E1 = 0
 E2 = 1
 E3 = 2
@@ -84,7 +88,14 @@ class Game():
       for u in fl.targets:
         if u.id == uid:
           return u
-        
+  
+  def GetFlById(self,uid : int | None):
+    for fl in self.battlefields[self.currentBF].frontlines:
+      for u in fl.targets:
+        if u.id == uid:
+          return self.battlefields[self.currentBF].frontlines.index(fl)
+  
+  
   def ChangeEvent(self,eid : Literal[0,1,2,3]):
     self.events[eid] = not self.events[eid]
     if eid == E1:
@@ -193,7 +204,7 @@ class Game():
       ...
     
 
-  def Attack(self,u : Unit ,tid : int):
+  def Attack(self,u : Unit ,tid : int | None):
 
     if(tid in (HQ_A, HQ_B)): #攻击总部
       atk = ClacAtk(u.tags,u.atk)
@@ -212,6 +223,12 @@ class Game():
       atk = ClacAtk(u.tags,u.atk)
       dmg = ClacDamage(t.tags,atk)
       t.dfns -= dmg
+
+      #受到反击伤害
+      if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
+        fAtk = t.atk
+        dmg = ClacDamage(u.tags,fAtk)
+        u.dfns -= dmg
 
 
   def ReceiveRecord(self):
@@ -263,7 +280,16 @@ class Game():
         u = self.GetUnitById(entry.actorId)
         if(u is None):
           raise Exception('你不能指挥滚木攻击')
-        
+        ufl = self.GetFlById(entry.actorId)
+        tfl = self.GetFlById(entry.target)
+        uType = u.uType
+        if(uType in (UnitType.bomber, UnitType.artillery, UnitType.fighter)):
+          self.Attack(u,entry.target)
+        else:
+          if(ufl in (DA, DB) and tfl in (DA, DB)):
+            raise Exception('攻击距离不足')
+          else:
+            self.Attack(u,entry.target)
         
 
       
