@@ -13,6 +13,8 @@ class Unit():
   tags : list[Tag]
   uType : UnitType
   utl : Literal[0,1,2]
+  owner : str
+  fl : int 
   
 
 @dataclass
@@ -25,4 +27,4 @@ class Frontline():
 
 
 def CardToUnit(card : UnitCard):
-  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags,card.type,card.timeline)
+  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags,card.type,card.timeline,'',-1)
