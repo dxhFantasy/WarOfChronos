@@ -8,3 +8,4 @@ class Player():
   handCards : list[HandCard]
   deck : list[int]
   hq : int
+  name : Literal['A','B','N']
