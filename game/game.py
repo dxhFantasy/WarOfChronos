@@ -78,7 +78,7 @@ class Game():
     self.DrawCard('A',5)
     self.DrawCard('B',6)
     state = self.GetState()
-    return (state.playerA.handCards, state.playerB.handCards)
+    return state
 
 
   def GetPlayer(self,player : str):

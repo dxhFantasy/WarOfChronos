@@ -116,6 +116,8 @@ function updateGameState(stateData) {
     $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
     $("#my-hq-hp").text(`HP: ${stateData.my_hq}`);
     $("#enemy-hq-hp").text(`HP: ${stateData.enemy_hq}`);
+    renderCompactHand(stateData.my_handcards);
+    renderExpandedHand(stateData.my_handcards);
 }
 function enterGame() {
     $("#menu").addClass("hidden");

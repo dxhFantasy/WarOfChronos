@@ -1,6 +1,6 @@
-from classes.Tags import *
-from classes.Target import *
-from classes.Command import *
+from .classes.Tags import *
+from .classes.Target import *
+from .classes.Command import *
 from dataclasses import dataclass
 import random
 
@@ -39,7 +39,7 @@ CommandCard(3,[],'全频带阻塞干扰','',effects_=[
 ],dect_='使所有单位获得 +4 行动花费',tl=1)
 ]
 
-cardIds = list(range(1,len(allCards)+1))
+cardIds = list(range(0,len(allCards)))
 
 cardIds *= 40
 

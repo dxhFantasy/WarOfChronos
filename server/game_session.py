@@ -124,6 +124,7 @@ class GameSession:
             "type": "show_message",
             "message": "第 1 回合"
         })
+        self.game.InitDraw()
         await self.broadcast_state()
     
 if __name__ == "__main__":
