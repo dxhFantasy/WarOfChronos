@@ -48,3 +48,22 @@ function renderCompactHand(cards){
             .append(div);
     });
 }
+function renderExpandedHand(cards) {
+    const container = $("#expanded-hand");
+    container.empty();
+    cards.forEach(card => {
+        const cardElement = $(`
+            <div class="expanded-card"
+                 data-id="${card.id}">
+
+                <img src="assets/cards/${card.id}.jpg">
+
+                <div class="card-cost">
+                    ${card.cost}
+                </div>
+
+            </div>
+        `);
+        container.append(cardElement);
+    });
+}
