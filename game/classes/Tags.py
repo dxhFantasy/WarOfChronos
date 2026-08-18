@@ -17,3 +17,6 @@ class Tag():
   keyword : Keyword
   value : str | int | None = None
 
+@dataclass
+class f(Tag):
+  ...

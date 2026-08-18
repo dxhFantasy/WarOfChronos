@@ -1,7 +1,9 @@
+
 from .Battlefield import *
 from .Player import *
 from .Cards import *
 from .ActionRecord import *
+
 from typing import Any,Literal
 from copy import deepcopy
 from random import randint
@@ -13,9 +15,7 @@ def FindKeyw(u : Unit,k : Keyword):
       return u.tags.index(t)
   return None
 
-A = 0
-B = 1
-C = 2
+
 
 HQ_A = -1
 HQ_B = -2
@@ -40,6 +40,15 @@ class GameState():
   cbf : Literal[0,1,2]
   evt : list[bool]
 
+
+@dataclass
+class Clock:
+  player : Player
+  Time : Time
+  targets : list[int]
+  effect : EffectData
+  info : int
+
 class Result:
   def __init__(self, state : Literal['ok','err'],msg : str | None = None, gameState : GameState | None = None) -> None:
     self.state : Literal['ok','err'] = state
@@ -53,11 +62,13 @@ class Game():
     self.playerA : Player = Player(0,0,[],[],20,'A')
     self.playerB : Player = Player(0,0,[],[],20,'B')
 
-
+    self.clocks : list[Clock] = []
 
 
     self.playerA.deck = cardIds[0:len(cardIds)//2-1]
-    self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)//2-1]
+    self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)-1]
+
+    self.lastId = 0
 
 
 
@@ -73,6 +84,9 @@ class Game():
 
     random.shuffle(self.playerA.deck)
     random.shuffle(self.playerB.deck)
+
+    if __name__ == '__main__':
+      self.InitDraw()
 
   def InitDraw(self):
     self.DrawCard('A',5)
@@ -328,7 +342,7 @@ class Game():
         assert type(value) == int
         raise Exception('代码没写')
       elif effectType == EffectType.Destroy:
-        assert type(value) == int
+        # assert type(value) == int
         t.dfns = -1
       elif effectType == EffectType.DrawCard:
         assert type(value) == int
@@ -347,6 +361,82 @@ class Game():
       elif effectType == EffectType.PutOnBottom:
         assert type(value) == int
         player.deck.insert(0,value)
+      elif effectType == EffectType.SetAC:
+        assert type(value) == int
+        t.actionCost = value
+      elif effectType == EffectType.SetAP:
+        assert type(value) == int
+        player.actionPoint = value
+      elif effectType == EffectType.SetAPS:
+        assert type(value) == int
+        player.apSlot = value
+      elif effectType == EffectType.SetAtk:
+        assert type(value) == int
+        t.atk = value
+      elif effectType == EffectType.SetDef:
+        assert type(value) == int
+        t.dfns = value
+      
+      
+  def DeleteEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
+    for tid in targets:
+      t = self.GetUnitById(tid)
+      assert t is not None
+      if effectType == EffectType.AddAC:
+        assert type(value) == int
+        t.actionCost -= value
+      elif  effectType == EffectType.AddAP:
+        assert type(value) == int
+        player.actionPoint -= value
+      elif  effectType == EffectType.ADDAPS:
+        assert type(value) == int
+        player.apSlot -= value
+      elif  effectType == EffectType.AddToHand:
+        assert type(value) == int
+        # player.handCards.append(CardToHand(value))
+        raise Exception('不存在的需求不予实现')
+      elif  effectType == EffectType.AddTag:
+        assert type(value) == Tag
+        t.tags.pop(t.tags.index(value))
+      elif effectType == EffectType.Buff:
+        assert type(value) == tuple[int, int]
+        t.atk -= value[0]
+        t.dfns -= value[1]
+      elif effectType == EffectType.Deploy:
+        assert type(value) == int
+        raise Exception('代码没写')
+      elif effectType == EffectType.Destroy:
+        # assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.DrawCard:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.TakeDamage:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.PutOnTop:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.ShuffleIntoDeck:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.PutOnBottom:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.SetAC:
+        t.actionCost = allCards[t.cardId].actionCost # type: ignore
+      elif effectType == EffectType.SetAP:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.SetAPS:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.SetAtk:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
+      elif effectType == EffectType.SetDef:
+        assert type(value) == int
+        raise Exception('不存在的需求不予实现')
 
   def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
     es = command.effects
@@ -409,6 +499,8 @@ class Game():
 
       if flag:#处理指令效果
         self.ApplyEffects(targets,e.effect,e.value, player)
+        if e.endTime:
+          self.clocks.append(Clock(player,e.endTime,targets,e,e.endTime.info))
 
 
 
@@ -447,7 +539,8 @@ class Game():
               ((player == 'A' and entry.target == 0) or (player == 'B' and entry.target == 1)):
           
           newUnit = CardToUnit(unitCard)
-          newUnit.id = self.battlefields[self.currentBF].unitsNum
+          newUnit.id = self.lastId + 1
+          self.lastId += 1
           assert entry.actorPlayer in ('A', 'B')
           newUnit.owner = entry.actorPlayer
           newUnit.fl = entry.target
@@ -518,6 +611,16 @@ class Game():
 
 
   def TurnStart(self, lastTurnPlayer : str) -> None:
+    for c in self.clocks:
+      if c.Time.turnTime == TURN_START:
+        if c.Time.turnCount == 0:
+          if c.info == START:
+            self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+          elif c.info == END:
+            self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+        else:
+          c.Time.turnCount -= 1
+
     if(lastTurnPlayer == 'A'):
       self.DrawCard('B',1)
       self.playerB.apSlot += 1
@@ -542,6 +645,15 @@ class Game():
 
   def TurnEnd(self,player : str) -> None:
     ...
+    for c in self.clocks:
+      if c.Time.turnTime == TURN_END:
+        if c.Time.turnCount == 0:
+          if c.info == START:
+            self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+          elif c.info == END:
+            self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+        else:
+          c.Time.turnCount -= 1
     self.TurnStart(player)
     ...
 
@@ -553,8 +665,10 @@ def debug(arg : Any):
   print(arg)
 
 if __name__ == '__main__':
-  a = Player(0,0,[],[],114514,'N')
-  b = a
-  b.apSlot += 1
-  debug(a.apSlot)
+  g = Game()
+  print(g.playerA.deck)
+  print(g.playerB.deck)
+  print(g.playerA.handCards)
+  print(g.playerB.handCards)
+  print(g.playerB.hq)
 

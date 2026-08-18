@@ -4,6 +4,10 @@ from .classes.Command import *
 from dataclasses import dataclass
 import random
 
+A = 0
+B = 1
+C = 2
+
 allCards : list[UnitCard | CommandCard] = [
 UnitCard(6,8,[Tag(Keyword.Guard)],6,2,'ZTZ99A主战坦克','N',UnitType.tank,2),
 UnitCard(6,2,[Tag(Keyword.Blitz)],\
@@ -36,12 +40,33 @@ CommandCard(3,[],'全频带阻塞干扰','',effects_=[
     effect=EffectType.AddAC,
     value = 4,
   )
-],dect_='使所有单位获得 +4 行动花费',tl=1)
+],dect_='使所有单位获得 +4 行动花费',tl=1),
+CommandCard(7,[],'死线扩散','',effects_=[
+  EffectData(
+    target=TargetChoose(
+      owner=TargetOwner.Enemy,
+      num = ALL,
+      Random = False,
+    ),
+    effect=EffectType.SetAtk,
+    value = 0,
+  ),
+  EffectData(
+    target=TargetChoose(
+      owner = TargetOwner.Enemy,
+      num = ALL,
+      Random = False,
+    ),
+    effect=EffectType.ADDAPS,
+    value = -2,
+  ),
+],dect_='使所有敌方单位攻击力为 0 ,友方失去2个行动点槽',tl=C),
+
 ]
 
-cardIds = list(range(0,len(allCards)))
+cardIds = list(range(len(allCards)))
 
-cardIds *= 40
+cardIds *= 20
 
 def CardToHand(cid : int):
   return HandCard(cid,allCards[cid].cost,[])
