@@ -68,6 +68,11 @@ class EffectType(Enum):          #字面意思
   AddAP = '获得行动点'
   ADDAPS = '获得行动点槽'
   AddTag = '获得xx词条'
+  SetAtk = '设置攻击'
+  SetDef = '设置防御'
+  SetAC = '设置行动花费'
+  SetAP = '设置行动点'
+  SetAPS = '设置行动点槽'
 
 
 TURN_START = '回合开始'
@@ -75,11 +80,15 @@ TURN_END = '回合结束'
 ENEMY = '敌方'
 ALLY = '友方'
 
+START = 114514
+END = 1919810
+
 @dataclass
-class EndTime():
+class Time():
   turnCount : int
   turnOwner : str
   turnTime : str
+  info : int
 
 #eg ： 1/ENEMY/TURN_START 下个敌方回合开始时  0/ALLY/TURN_END （这个友方）回合结束时
 
@@ -88,7 +97,7 @@ class EffectData():
   target : TargetChoose #考虑到有时要把某张牌加入手牌/洗入卡组,加int指示卡牌id （丢到value了
   effect : EffectType
   value : int | Tag | tuple[int,int] #+x+x的两个x
-  endTime : EndTime | None = None
+  endTime : Time | None = None
   triggerCondition : list[TriggerCondition] | None = None
 
 
