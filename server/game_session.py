@@ -87,6 +87,7 @@ class GameSession:
         state: GameState,
         view: Literal["A", "B"]
     ):
+        print(state.playerA.handCards, state.playerB.handCards)
         state_dict: dict[str, Any] = dict()
         if view == 'A':
             state_dict['my_act_point'] = state.playerA.actionPoint
@@ -106,6 +107,7 @@ class GameSession:
         state_dict["events"] = state.evt
         state_dict["battlefields"] = self.handle_bf(state.battlefields)
         state_dict["type"] = "update_state"
+        print(view,"state_dict:", state_dict)
         return state_dict
     async def broadcast_state(self):
         state = self.game.GetState()
