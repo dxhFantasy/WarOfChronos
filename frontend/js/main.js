@@ -125,6 +125,7 @@ function enterGame() {
     $("#game").removeClass("hidden");
     $("#ready-modal").removeClass("active");
 }
+
 const jobs = {
     "dxhFantasy": "主策划/游戏设计",
     "lwjyreq": "前端网页/联机功能",
@@ -207,4 +208,5 @@ $(document).ready(() => {
         拉取作者信息失败`
         $("#author-list").append(authorItem);
     })
+    loadCardInfo()
 })
