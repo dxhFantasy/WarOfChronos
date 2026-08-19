@@ -41,7 +41,7 @@ function renderExpandedHand(cards) {
         let element = ""
         if(info.type === "unit"){
             element=$(`  
-            <div class="card">
+            <div class="expanded-card">
                 <div class="card-cost">
                     ${cardState.cost}
                 </div>
@@ -49,9 +49,7 @@ function renderExpandedHand(cards) {
                     ${info.name}
                 </div>
                 <div class="card-image">
-                    <img src="
-                    assets/cards/${cardState.id}.jpg
-                    ">
+                    <img src="assets/cards/${cardState.id}.jpg">
                 </div>
                 <div class="card-stats">
                     <span class="attack">
@@ -68,7 +66,7 @@ function renderExpandedHand(cards) {
             `);
         } else {
             element=$(`
-            <div class="card">
+            <div class="expanded-card">
                 <div class="card-cost">
                     ${cardState.cost}
                 </div>
@@ -76,9 +74,7 @@ function renderExpandedHand(cards) {
                     ${info.name}
                 </div>
                 <div class="card-image">
-                    <img src="
-                    assets/cards/${cardState.id}.jpg
-                    ">
+                    <img src="assets/cards/${cardState.id}.jpg">
                 </div>
                 <div class="card-text">
                     ${info.effect}
