@@ -20,7 +20,7 @@ CommandCard(7,[],'破釜沉舟','',effects_=[
       Random=False),
     effect=EffectType.Buff,
     value=(4,-1),
-    endTime=EndTime(0,turnOwner=ALLY,turnTime=TURN_END)),
+    endTime=Time(0,turnOwner=ALLY,turnTime=TURN_END,info = END)),
   EffectData(
     target=TargetChoose(
       condition=ChooseCondition(tid = HQ),
