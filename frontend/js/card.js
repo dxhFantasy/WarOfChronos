@@ -86,3 +86,28 @@ function renderExpandedHand(cards) {
         container.append(element);
     });
 }
+
+$(document).on("click", ".expanded-card", function(e){
+    console.log("click card");
+    e.stopPropagation();
+    let card = $(this);
+    // 已经选中
+    if(card.hasClass("selected")){
+        //取消部署状态
+        card.removeClass("selected");
+        setTimeout(()=>{
+            $(".expanded-card")
+                .removeClass("hidden");
+        },0);
+        $("#hand-overlay")
+            .removeClass("deploy-mode");
+        return;
+    }
+    // 第一次点击
+    $(".expanded-card")
+        .not(card)
+        .addClass("hidden");
+    card.addClass("selected");
+    $("#hand-overlay")
+        .addClass("deploy-mode");
+})
