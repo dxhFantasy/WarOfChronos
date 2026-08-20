@@ -163,6 +163,7 @@ class GameSession:
             "message": "第 %d 回合" % self.game.totalTurn
         })
         self.game.InitDraw()
+        self.game.TurnStart('B')
         await self.broadcast_state()
     
 if __name__ == "__main__":
