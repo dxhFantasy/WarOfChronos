@@ -51,6 +51,18 @@ class GameSession:
             })
             return
         entry: LogEntry | None = None
+        if player_side == "A" and self.game.totalTurn % 2 == 0:
+            await self.connections[player_side].send({
+                "type": "error",
+                "message": "当前不是你的回合"
+            })
+            return
+        if player_side == "B" and self.game.totalTurn % 2 == 1:
+            await self.connections[player_side].send({
+                "type": "error",
+                "message": "当前不是你的回合"
+            })
+            return
         if data.get("op_type", None) == "deploy_unit":
             card_index = data.get("card_index", None)
             if card_index is None:
