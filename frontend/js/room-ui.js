@@ -43,7 +43,7 @@ $("#room-id").click(() => {
 });
 $("#ready-button").click(() => {
     socket.send(JSON.stringify({
-        type:"ready"
+        action:"ready"
     }));
 
     $(this)

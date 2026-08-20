@@ -1,8 +1,30 @@
 from .Card import *
 from enum import Enum
-from .Tags import *
+from enum import Enum
+from dataclasses import dataclass
 from typing import Literal
 #from abc import ABC
+
+class Keyword(Enum):
+  Blitz = '闪击'
+  Agile = '灵活'
+  Prepared = '预备'
+  Guard = '守护'
+  Guarded = '被守护'
+  TimeWarp = '穿梭'
+  Deploy = '部署'
+  Deathrattle = '亡计'
+  Passive = '_被动效果'
+
+@dataclass
+class Tag():
+  keyword : Keyword
+  value : str | int | None = None
+
+@dataclass
+class f(Tag):
+  ...
+
 
 class TargetOwner(Enum):
   Enemy = '敌方单位'
@@ -104,8 +126,4 @@ class EffectData():
 
 
 
-class CommandCard(Card):
-  def __init__(self, cost_: int, tags_: list[Tag], name_ : str, owner_ : str, effects_ : list[EffectData], dect_ : str, tl : Literal[0,1,2]) -> None:
-    super().__init__(cost_, tags_, name_, owner_, tl)
-    self.effects = effects_
-    self.dect = dect_
+
