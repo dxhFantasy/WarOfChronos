@@ -548,7 +548,6 @@ class Game():
           raise Exception('单位不能放对面家里')
         elif entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) or \
               ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
-          
           newUnit = CardToUnit(unitCard)
           newUnit.id = self.lastId + 1
           self.lastId += 1

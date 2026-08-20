@@ -55,7 +55,7 @@ function renderEnemyHand(card_counts){
 function renderExpandedHand(cards) {
     const container = $("#expanded-hand");
     container.empty();
-    cards.forEach(cardState=>{
+    cards.forEach((cardState,index)=>{
         const info=getCardInfo(
             cardState.id
         );
@@ -64,7 +64,7 @@ function renderExpandedHand(cards) {
         let element = ""
         if(info.type === "unit"){
             element=$(`  
-            <div class="expanded-card">
+            <div class="expanded-card" data-index="${index}">
                 <div class="card-cost">
                     ${cardState.cost}
                 </div>
@@ -89,7 +89,7 @@ function renderExpandedHand(cards) {
             `);
         } else {
             element=$(`
-            <div class="expanded-card">
+            <div class="expanded-card" data-index="${index}">
                 <div class="card-cost">
                     ${cardState.cost}
                 </div>

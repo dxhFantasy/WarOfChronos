@@ -108,6 +108,9 @@ function cancelDeploy() {
 function enterDeploy(card_element) {
     deployState.active = true;
     deployState.card_element = card_element;
+    deployState.card_index =
+        Number(card_element.attr("data-index"));
+    console.log(card_element.attr("data-index"))
     $(".expanded-card")
         .not(card_element)
         .addClass("hidden");
@@ -141,6 +144,7 @@ $(document).on("click", "#player-base-units", function() {
         return;
     }
     console.log("请求部署单位");
+    console.log("deployState:", deployState);
     socket.send(JSON.stringify({
         action: "player_operation",
         op_type: "deploy_unit",
