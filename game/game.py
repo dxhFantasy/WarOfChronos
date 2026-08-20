@@ -546,8 +546,11 @@ class Game():
 
         if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
           raise Exception('单位不能放对面家里')
-        elif entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) or \
+        elif (entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared)) or \
               ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
+          if len(self.battlefields[self.currentBF].frontlines[entry.target].targets)\
+              >= self.battlefields[self.currentBF].frontlines[entry.target].maxTargets:
+            raise Exception('指挥阵线已满')
           newUnit = CardToUnit(unitCard)
           newUnit.id = self.lastId + 1
           self.lastId += 1
@@ -557,12 +560,31 @@ class Game():
           self.Deploy(newUnit,entry.target, entry.actorPlayer)
         
         else: 
+          print('TEXT',player,entry.target)
           raise Exception('不是你放单位给我放好的呀')
           
       elif(eType == ActionType.TurnEnd):
         
         self.TurnEnd(entry.actorPlayer)
-      
+      elif eType == ActionType.Move:
+        u = self.GetUnitById(entry.actorId)
+        if u is None:
+          raise Exception('为什么滚木在移动？')
+        if playerStruct.actionPoint < u.actionCost:
+          raise Exception('行动点不足')
+        try :
+          if self.moved.index(u.id):
+            raise Exception('本单位本回合不能移动')
+        except ValueError: # index函数未找到报错
+          if u.fl == F:
+            raise Exception('前线单位不能移出前线')
+          elif len(self.battlefields[self.currentBF].frontlines[F].targets)\
+              >= self.battlefields[self.currentBF].frontlines[F].maxTargets:
+            raise Exception('前线已满')
+          else:
+            u.fl = F
+            targetFL = self.battlefields[self.currentBF].frontlines[u.fl]
+            targetFL.targets.pop(targetFL.targets.index(u))
       elif eType == ActionType.Attack:
         u = self.GetUnitById(entry.actorId)
         if(u is None):
@@ -637,17 +659,17 @@ class Game():
       self.DrawCard('B',1)
       self.playerB.apSlot += 1
       self.playerB.actionPoint = self.playerB.apSlot
-      if self.events[0] :
+      if not self.events[0] :
         self.playerB.actionPoint -= 1
-      if self.events[2] :
+      if not self.events[2] :
         self.playerB.actionPoint += 2
     else:
       self.DrawCard('A',1)
       self.playerA.apSlot += 1
       self.playerA.actionPoint = self.playerA.apSlot
-      if self.events[0] :
+      if not self.events[0] :
         self.playerA.actionPoint -= 1
-      if self.events[2] :
+      if not self.events[2] :
         self.playerA.actionPoint += 2
     ...
     
