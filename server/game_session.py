@@ -10,7 +10,8 @@ from game.game import (
     HandCard, 
     Battlefield, 
     Frontline, 
-    Unit
+    Unit,
+    ActionType
 )
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Any, Literal
@@ -38,10 +39,47 @@ class GameSession:
 
     async def handle_action(
             self,
-            player_side: Literal["A", "B"],
-            record: LogEntry
+            player_side: Literal["A", "B"] | None,
+            data: dict[str, Any]
     ):
-        ...
+        if not player_side: return
+        state = self.game.GetState()
+        if self.status != SessionState.PLAYING:
+            await self.connections[player_side].send({
+                "type": "error",
+                "message": "游戏未开始或已结束"
+            })
+            return
+        entry: LogEntry | None = None
+        if data.get("op_type", None) == "deploy_unit":
+            card_index = data.get("card_index", None)
+            if card_index is None:
+                await self.connections[player_side].send({
+                    "type": "error",
+                    "message": "缺少必要参数"
+                })
+                return
+            entry = LogEntry(
+                TurnNumber=self.game.totalTurn,
+                actorPlayer=player_side,
+                actionType=ActionType.Deploy,
+                actorId=state.playerA.handCards[card_index].id if player_side == "A" else state.playerB.handCards[card_index].id,
+                target=1 if player_side == "A" else 2
+            )
+        else:
+            await self.connections[player_side].send({
+                "type": "error",
+                "message": "未知的操作类型"
+            })
+            return
+        result = self.game.ProcessRecord(entry)
+        if result.state == "ok":
+            await self.broadcast_state()
+        else:
+            await self.connections[player_side].send({
+                "type": "error",
+                "message": result.msg
+            })
     def handle_handcards(self, handcards: list[HandCard]) -> list[dict[str, Any]]:
         l = []
         for hc in handcards:
@@ -87,7 +125,6 @@ class GameSession:
         state: GameState,
         view: Literal["A", "B"]
     ):
-        print(state.playerA.handCards, state.playerB.handCards)
         state_dict: dict[str, Any] = dict()
         if view == 'A':
             state_dict['my_act_point'] = state.playerA.actionPoint
@@ -107,7 +144,6 @@ class GameSession:
         state_dict["events"] = state.evt
         state_dict["battlefields"] = self.handle_bf(state.battlefields)
         state_dict["type"] = "update_state"
-        print(view,"state_dict:", state_dict)
         return state_dict
     async def broadcast_state(self):
         state = self.game.GetState()
@@ -121,10 +157,10 @@ class GameSession:
         await self.broadcaster(message)
     async def start_game(self):
         print("Game session started.")
-        print(f"{self.broadcaster}")
+        self.game.totalTurn = 1
         await self.broadcast_message({
             "type": "show_message",
-            "message": "第 1 回合"
+            "message": "第 %d 回合" % self.game.totalTurn
         })
         self.game.InitDraw()
         await self.broadcast_state()

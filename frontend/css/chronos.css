@@ -522,6 +522,36 @@ h1 {
         0 0 12px rgba(77,166,255,.5);
 }
 
-#end-turn-button:active {
-    transform: translateY(-50%) scale(0.95);
+#player-base-units.deployable {
+    border: 2px solid #4da6ff;
+    box-shadow: 0 0 15px rgba(77, 166, 255, 0.6);
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+#player-base-units.deployable:hover {
+    border-color: #60a5fa;
+    box-shadow: 0 0 25px rgba(77, 166, 255, 0.9);
+}
+#hand-overlay.deploy-mode {
+    background: transparent;
+    pointer-events: none;
+}
+#hand-overlay.deploy-mode #expanded-hand {
+    pointer-events: none;
+}
+
+#hand-overlay.deploy-mode .expanded-card {
+    display: none;
+}
+#hand-overlay.deploy-mode .expanded-card.selected {
+    display: flex;
+}
+#hand-overlay.deploy-mode .expanded-card.selected:hover {
+    transform: translateY(-50%);
+}
+
+#hand-overlay.deploy-mode #close-hand {
+    display: none;
 }

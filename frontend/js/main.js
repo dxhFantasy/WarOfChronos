@@ -3,7 +3,11 @@ let socket = new WebSocket(
 );
 const authorList = ["dxhFantasy", "lwjyreq"]
 let authorCache = new Array();
-
+let deployState = {
+    active : false,
+    card_index : -1,
+    card_element : null,
+}
 async function getAuthor(){
     let cache = localStorage.getItem("authors")
     if (cache) {
@@ -78,6 +82,73 @@ $("#ready-button").click(() => {
 $("#about-return").click(() => {
     hideAboutUI()
 })
+function cancelDeploy() {
+
+    deployState.active = false;
+    deployState.card_index = -1;
+    deployState.card_element = null;
+
+    $(".expanded-card")
+        .removeClass("selected")
+        .removeClass("hidden");
+
+    $(".deployable")
+        .removeClass("deployable");
+
+    $("#hand-overlay")
+        .removeClass("deploy-mode");
+
+    $("#close-hand")
+        .removeClass("hidden");
+
+    $("#end-turn-button")
+        .removeClass("hidden");
+    console.log("取消部署");
+}
+function enterDeploy(card_element) {
+    deployState.active = true;
+    deployState.card_element = card_element;
+    $(".expanded-card")
+        .not(card_element)
+        .addClass("hidden");
+    card_element.addClass("selected");
+    $("#hand-overlay")
+        .addClass("deploy-mode");
+    $("#player-base-units")
+        .addClass("deployable");
+    $("#close-hand")
+        .addClass("hidden");
+    $("#end-turn-button")
+        .addClass("hidden");
+}
+$(document).on("click", ".expanded-card", function(e){
+    console.log("click card");
+    e.stopPropagation();
+    let card = $(this);
+    if(card.hasClass("selected")){
+        card.removeClass("selected");
+        cancelDeploy();
+        return;
+    }
+    if (deployState.active){
+        cancelDeploy();
+    }
+    enterDeploy(card);
+})
+$(document).on("click", "#player-base-units", function() {
+    console.log("点击了玩家基地");
+    if (!deployState.active) {
+        return;
+    }
+    console.log("请求部署单位");
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "deploy_unit",
+        card_index: deployState.card_index,
+        target: "player_base"
+    }));
+
+});
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
     console.log("Received message:", data);
@@ -101,6 +172,10 @@ socket.onmessage = (event) => {
     }
     if (data.type === "error"){
         showNotice(data.message, "warning")
+
+        if (deployState.active) {
+            cancelDeploy();
+        }
     }
     if (data.type === "show_message") {
         console.log("Battle message:", data.message)
