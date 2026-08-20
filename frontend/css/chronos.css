@@ -478,3 +478,80 @@ h1 {
         0 0 20px #4da6ff;
     cursor:pointer;
 }
+
+#enemy-card-area {
+    width: 320px;
+    height: 150px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+}
+
+#enemy-hand {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: default;
+}
+
+#end-turn-button {
+    position: absolute;
+    right: 3%;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 130px;
+    height: 55px;
+    background: #1e293b;
+    color: #e2e8f0;
+    border: 2px solid #475569;
+    border-radius: 10px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    transition:
+        background .2s,
+        border-color .2s,
+        box-shadow .2s,
+        transform .2s;
+}
+
+#end-turn-button:hover {
+    background: #334155;
+    border-color: #4da6ff;
+    box-shadow:
+        0 0 12px rgba(77,166,255,.5);
+}
+
+#player-base-units.deployable {
+    border: 2px solid #4da6ff;
+    box-shadow: 0 0 15px rgba(77, 166, 255, 0.6);
+    cursor: pointer;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+#player-base-units.deployable:hover {
+    border-color: #60a5fa;
+    box-shadow: 0 0 25px rgba(77, 166, 255, 0.9);
+}
+#hand-overlay.deploy-mode {
+    background: transparent;
+    pointer-events: none;
+}
+#hand-overlay.deploy-mode #expanded-hand {
+    pointer-events: none;
+}
+
+#hand-overlay.deploy-mode .expanded-card {
+    display: none;
+}
+#hand-overlay.deploy-mode .expanded-card.selected {
+    display: flex;
+}
+#hand-overlay.deploy-mode .expanded-card.selected:hover {
+    transform: translateY(-50%);
+}
+
+#hand-overlay.deploy-mode #close-hand {
+    display: none;
+}

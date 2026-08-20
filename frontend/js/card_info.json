@@ -28,5 +28,11 @@
         "cost": 3,
         "type": "command",
         "effect": "使所有单位获得 +4 行动花费"
+    },
+    {
+        "name": "死线扩散",
+        "cost": 7,
+        "type": "command",
+        "effect": "使所有敌方单位攻击力为 0 ,友方失去2个行动点槽"
     }
 ]
