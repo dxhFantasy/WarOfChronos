@@ -29,6 +29,29 @@ function renderCompactHand(cards){
             .append(div);
     });
 }
+/*
+    @param card_counts: 敌方手牌数量
+*/
+function renderEnemyHand(card_counts){
+    let gap = Math.min(
+        35,
+        280 / card_counts
+    );
+    $("#enemy-hand").empty();
+    for(let i = 0; i < card_counts; i++){
+        let div=$("<div>");
+        div.addClass(
+            "compact-card"
+        );
+        div.css({
+            left:
+            i * gap,
+            zIndex:i
+        });
+        $("#enemy-hand")
+            .append(div);
+    };
+}
 function renderExpandedHand(cards) {
     const container = $("#expanded-hand");
     container.empty();

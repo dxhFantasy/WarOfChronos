@@ -118,6 +118,7 @@ function updateGameState(stateData) {
     $("#enemy-hq-hp").text(`HP: ${stateData.enemy_hq}`);
     renderCompactHand(stateData.my_handcards);
     renderExpandedHand(stateData.my_handcards);
+    renderEnemyHand(stateData.enemy_hc_counts);
 }
 function enterGame() {
     $("#menu").addClass("hidden");
