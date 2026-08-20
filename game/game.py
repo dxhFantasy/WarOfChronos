@@ -6,7 +6,7 @@ from .ActionRecord import *
 
 from typing import Any,Literal
 from copy import deepcopy
-from random import randint
+
 
 
 def FindKeyw(u : Unit,k : Keyword):
@@ -15,6 +15,8 @@ def FindKeyw(u : Unit,k : Keyword):
       return u.tags.index(t)
   return None
 
+
+DEBUG = 1
 
 
 HQ_A = -1
@@ -68,7 +70,14 @@ class Game():
     self.playerA.deck = cardIds[0:len(cardIds)//2-1]
     self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)-1]
 
+    if DEBUG:
+      self.playerA.apSlot = 12
+      self.playerB.apSlot = 12
+
     self.lastId = 0
+
+    self.moved : list[int] = []
+    self.attacked : list[int] = []
 
 
 
@@ -468,10 +477,8 @@ class Game():
           for u in fl.targets:
             if self.CheckCondition(e.target.condition, u.id, player):
               temp.append(u.id) #候选目标
-        for _ in range(e.target.num):#随机选择目标
-          rt = randint(0,len(temp) - 1)
-          if rt not in targets:
-            targets.append(rt) 
+        random.shuffle(temp)#随机选择目标
+        targets = temp[0:e.target.num]
       
       
       if len(targets) == 0:
@@ -505,7 +512,7 @@ class Game():
 
 
   def ReceiveRecord(self):
-    ...
+    ...#疑似肺雾函数
     #self.ProcessRecord(...)
   
   def ProcessRecord(self,entry : LogEntry):
@@ -513,7 +520,8 @@ class Game():
     result : Result | None = None
     player = entry.actorPlayer
     try:
-      if(entry.actorPlayer == 'N'):
+      playerStruct = self.GetPlayer(player)
+      if(not playerStruct):
           raise Exception('什么叫滚木在执行操作')
       if(eType == ActionType.DrawCard):
         if(entry.target is None):
@@ -527,16 +535,19 @@ class Game():
           raise Exception('不能部署滚木')
         
         if(allCards[entry.actorId].timeline != self.currentBF): # type: ignore
+          print("TEST",allCards[entry.actorId],self.currentBF) # type: ignore
           raise Exception('禁止出现超时空战士')
+        if playerStruct.actionPoint < allCards[entry.actorId].cost:
+          raise Exception('行动点不足')
         unitCard = allCards[entry.actorId]
         if(type(unitCard) != UnitCard):
           raise Exception('不能部署指令，啥子比。')
         assert type(unitCard) == UnitCard
 
-        if ((player == 'A' and entry.target == 2) or (player == 'B' and entry.target == 0)):
+        if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
           raise Exception('单位不能放对面家里')
-        elif entry.target == 1 and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) or \
-              ((player == 'A' and entry.target == 0) or (player == 'B' and entry.target == 1)):
+        elif entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) or \
+              ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
           
           newUnit = CardToUnit(unitCard)
           newUnit.id = self.lastId + 1
@@ -566,7 +577,11 @@ class Game():
           if(ufl in (DA, DB) and tfl in (DA, DB)):
             raise Exception('攻击距离不足')
           else:
-            self.Attack(u,entry.target)
+            try:
+              if self.attacked.index(u.id):
+                self.Attack(u,entry.target)
+            except ValueError:
+              raise Exception('本单位本回合不能攻击')
         
 
       
@@ -595,8 +610,6 @@ class Game():
           for u in fl.targets:
             if FindKeyw(u,Keyword.Guarded):
               u.tags.pop(u.tags.index(Tag(Keyword.Guarded)))
-    
-
 
   def GetState(self):
     self.Check()
