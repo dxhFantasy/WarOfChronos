@@ -1,4 +1,3 @@
-from .classes.Tags import *
 from .classes.Target import *
 from .classes.Command import *
 from dataclasses import dataclass

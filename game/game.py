@@ -577,8 +577,11 @@ class Game():
           if(ufl in (DA, DB) and tfl in (DA, DB)):
             raise Exception('攻击距离不足')
           else:
-            if self.attacked.index(u.id):
-              self.Attack(u,entry.target)
+            try:
+              if self.attacked.index(u.id):
+                self.Attack(u,entry.target)
+            except ValueError:
+              raise Exception('本单位本回合不能攻击')
         
 
       
