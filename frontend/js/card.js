@@ -29,6 +29,29 @@ function renderCompactHand(cards){
             .append(div);
     });
 }
+/*
+    @param card_counts: 敌方手牌数量
+*/
+function renderEnemyHand(card_counts){
+    let gap = Math.min(
+        35,
+        280 / card_counts
+    );
+    $("#enemy-hand").empty();
+    for(let i = 0; i < card_counts; i++){
+        let div=$("<div>");
+        div.addClass(
+            "compact-card"
+        );
+        div.css({
+            left:
+            i * gap,
+            zIndex:i
+        });
+        $("#enemy-hand")
+            .append(div);
+    };
+}
 function renderExpandedHand(cards) {
     const container = $("#expanded-hand");
     container.empty();
@@ -86,28 +109,3 @@ function renderExpandedHand(cards) {
         container.append(element);
     });
 }
-
-$(document).on("click", ".expanded-card", function(e){
-    console.log("click card");
-    e.stopPropagation();
-    let card = $(this);
-    // 已经选中
-    if(card.hasClass("selected")){
-        //取消部署状态
-        card.removeClass("selected");
-        setTimeout(()=>{
-            $(".expanded-card")
-                .removeClass("hidden");
-        },0);
-        $("#hand-overlay")
-            .removeClass("deploy-mode");
-        return;
-    }
-    // 第一次点击
-    $(".expanded-card")
-        .not(card)
-        .addClass("hidden");
-    card.addClass("selected");
-    $("#hand-overlay")
-        .addClass("deploy-mode");
-})

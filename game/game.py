@@ -535,6 +535,7 @@ class Game():
           raise Exception('不能部署滚木')
         
         if(allCards[entry.actorId].timeline != self.currentBF): # type: ignore
+          print("TEST",allCards[entry.actorId],self.currentBF) # type: ignore
           raise Exception('禁止出现超时空战士')
         if playerStruct.actionPoint < allCards[entry.actorId].cost:
           raise Exception('行动点不足')
