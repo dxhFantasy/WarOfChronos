@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Callable, Any, Literal
 from typing import Coroutine
 import json
 if TYPE_CHECKING:
-   from room import Player as PlayerConnection
+    from room import Player as PlayerConnection
 class SessionState(Enum):
     PLAYING = "playing"
     FINISHED = "finished"
