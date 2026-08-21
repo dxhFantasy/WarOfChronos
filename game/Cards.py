@@ -8,7 +8,7 @@ B = 1
 C = 2
 
 allCards : list[UnitCard | CommandCard] = [
-UnitCard(6,8,[Tag(Keyword.Guard)],6,2,'ZTZ99A主战坦克','N',UnitType.tank,B),
+UnitCard(6,8,[Tag(Keyword.Guard),Tag(Keyword.Prepared)],6,2,'ZTZ99A主战坦克','N',UnitType.tank,B),
 UnitCard(6,2,[Tag(Keyword.Blitz)],\
             3,1,'2S38\"偏瘫\"','N',UnitType.tank,B),
 CommandCard(7,[],'破釜沉舟','',effects_=[

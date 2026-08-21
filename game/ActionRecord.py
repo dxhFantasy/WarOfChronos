@@ -11,7 +11,7 @@ class ActionType(Enum):
   Attack = '攻击'
   TurnStart = '回合开始'
   TurnEnd = '回合结束'
-
+  Move = '单位移动'
 
   ...
 
