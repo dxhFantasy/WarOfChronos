@@ -1,0 +1,129 @@
+from .Card import *
+from enum import Enum
+from enum import Enum
+from dataclasses import dataclass
+from typing import Literal
+#from abc import ABC
+
+class Keyword(Enum):
+  Blitz = '闪击'
+  Agile = '灵活'
+  Prepared = '预备'
+  Guard = '守护'
+  Guarded = '被守护'
+  TimeWarp = '穿梭'
+  Deploy = '部署'
+  Deathrattle = '亡计'
+  Passive = '_被动效果'
+
+@dataclass
+class Tag():
+  keyword : Keyword
+  value : str | int | None = None
+
+@dataclass
+class f(Tag):
+  ...
+
+
+class TargetOwner(Enum):
+  Enemy = '敌方单位'
+  Ally = '友方单位'
+  All = '所有单位'
+
+ALL = -1 #这个是标记指向所有
+
+class cmp(Enum):              #字面意思
+  Eq = '等于'
+  NEq = '不等于'
+  Gr = '大于'
+  NGr = '不大于'
+  Le = '小于'
+  NLe = '不小于'
+
+
+
+HQ = 114514
+@dataclass
+class ChooseCondition():      #选择目标的条件
+  tid : int | None = None #可能要打总部
+  atk : tuple[cmp,int] | None = None
+  dfns : tuple[cmp,int] | None = None
+  tag : Tag | None = None
+  cost : tuple[cmp,int] | None = None
+  actCost : tuple[cmp,int] | None = None
+  frontline : Literal[0,1,2] | None = None
+  timeline : Literal[0,1,2] | None = None
+  cmpT : cmp = cmp.Eq
+  value : int = -1
+
+
+@dataclass
+class TargetChoose():         #目标指示器
+  owner : TargetOwner
+  num : int   #刚刚的ALL
+  Random : bool
+  condition : ChooseCondition | None = None
+
+class TriggerConditionType(Enum):#效果触发条件
+  HasUnitsOnField = '场上有单位'
+  EventsHappend = '事件被触发'
+  ...
+
+@dataclass
+class TriggerCondition():        #条件指示器
+  cdtnType :TriggerConditionType
+  target : TargetChoose | int | None = None # int用于指示事件id
+
+
+class EffectType(Enum):          #字面意思
+  DrawCard = '抽牌'
+  Deploy = '部署'
+  TakeDamage = '受到伤害'
+  AddToHand = '加入手牌'
+  ShuffleIntoDeck = '洗入卡组'
+  PutOnTop = '置于卡组顶'
+  PutOnBottom = '置于卡组底'
+  Destroy = '消灭'
+  Buff = '+x+x'
+  AddAC = '增加行动花费'
+  AddAP = '获得行动点'
+  ADDAPS = '获得行动点槽'
+  AddTag = '获得xx词条'
+  SetAtk = '设置攻击'
+  SetDef = '设置防御'
+  SetAC = '设置行动花费'
+  SetAP = '设置行动点'
+  SetAPS = '设置行动点槽'
+
+
+TURN_START = '回合开始'
+TURN_END = '回合结束'
+ENEMY = '敌方'
+ALLY = '友方'
+
+START = 114514
+END = 1919810
+
+@dataclass
+class Time():
+  turnCount : int
+  turnOwner : str
+  turnTime : str
+  info : int
+
+#eg ： 1/ENEMY/TURN_START 下个敌方回合开始时  0/ALLY/TURN_END （这个友方）回合结束时
+
+@dataclass
+class EffectData():
+  target : TargetChoose #考虑到有时要把某张牌加入手牌/洗入卡组,加int指示卡牌id （丢到value了
+  effect : EffectType
+  value : int | Tag | tuple[int,int] #+x+x的两个x
+  endTime : Time | None = None
+  triggerCondition : list[TriggerCondition] | None = None
+
+
+
+
+
+

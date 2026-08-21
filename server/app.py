@@ -9,7 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
 import json
-from room import (
+from .room import (
     rooms,
     create_room,
     Player,
@@ -38,7 +38,7 @@ connections = []
 @app.get("/")
 def index():
     return FileResponse(
-        "../frontend/index.html"
+        BASE_DIR / "frontend" / "index.html" 
     )
 
 # WebSocket连接
@@ -96,6 +96,18 @@ async def websocket_endpoint(
                     continue
             elif action == "ready" and room:
                 await room.player_ready(player)
+            elif action == "player_operation" and room:
+                if room.game_session:
+                    await room.game_session.handle_action(
+                        player.side,
+                        data                
+                    )
+            else:
+                print("无效的操作:", data)
+                await player.send({
+                    "type": "error",
+                    "message": "无效的操作"
+                })    
     except WebSocketDisconnect:
 
         connections.remove(websocket)

@@ -127,7 +127,7 @@ justify-content-center align-items-center">
     <div id="battlefield">
         <div id="enemy-status-bar" class="status-bar">
             <span>敌方</span>
-            <span>行动点: 3</span>
+            <span id="enemy-act-point">行动点: 3</span>
             <span>WarOfChronos 测试版本不代表最终品质</span>
         </div>
         <section class="enemy-side">
@@ -145,7 +145,7 @@ justify-content-center align-items-center">
 
                 <div id="enemy-hq" class="hq">
                     <span>敌方总部</span>
-                    <span>HP:30</span>
+                    <span id="enemy-hq-hp">HP:30</span>
                 </div>
 
                 <div id="enemy-base-units" class="unit-zone">
@@ -179,7 +179,7 @@ justify-content-center align-items-center">
                 </div>
                 <div id="player-hq" class="hq">
                     <span>我方总部</span>
-                    <span>HP:30</span>
+                    <span id="my-hq-hp">HP:30</span>
                 </div>
             </div>
             <div id="player-card-area">
@@ -190,10 +190,30 @@ justify-content-center align-items-center">
         </section>
         <div id="player-status-bar" class="status-bar">
             <span>我方</span>
-            <span>行动点: 3</span>
+            <span id="my-act-point">行动点: 3</span>
             <span>时间线: 现在</span>
         </div>
+        <button id="end-turn-button">
+            结束回合
+        </button>
     </div>
+    <div id="battle-message" class="hidden">
+        <div class="message-bar">
+            <!--信息-->
+        </div>
+    </div>
+    <div id="hand-overlay">
+        <div id="expanded-hand">
+            <!-- JS动态生成 -->
+            <div class="expanded-card">
+                <img src="assets/testcard.jpg">
+            </div>
+    </div>
+    <button id="close-hand">
+            返回
+    </button>
+
+</div>
 </div>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 

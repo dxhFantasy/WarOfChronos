@@ -1,19 +1,85 @@
-from classes.Tags import *
-from classes.Target import *
+from .classes.Target import *
+from .classes.Command import *
+from dataclasses import dataclass
 import random
 
-allCards : dict[int, Unit] = {
-  1 : Unit(6,8,[Tag(Keyword.Guard)],6,2,'ZTZ99A主战坦克','N'),
-  2 : Unit(4,2,[Tag(Keyword.Blitz),Tag(Keyword.Passive,'对战坦克时，具有双倍攻击力')],\
-            3,1,'2S38\"偏瘫\"','N')
-}
+A = 0
+B = 1
+C = 2
 
-cardIds = list(range(1,len(allCards)+1))
+allCards : list[UnitCard | CommandCard] = [
+UnitCard(6,8,[Tag(Keyword.Guard)],6,2,'ZTZ99A主战坦克','N',UnitType.tank,B),
+UnitCard(6,2,[Tag(Keyword.Blitz)],\
+            3,1,'2S38\"偏瘫\"','N',UnitType.tank,B),
+CommandCard(7,[],'破釜沉舟','',effects_=[
+  EffectData(
+    target=TargetChoose(
+      owner=TargetOwner.Ally,
+      num=ALL,
+      Random=False),
+    effect=EffectType.Buff,
+    value=(4,-1),
+    endTime=Time(0,turnOwner=ALLY,turnTime=TURN_END,info = END)),
+  EffectData(
+    target=TargetChoose(
+      condition=ChooseCondition(tid = HQ),
+      owner=TargetOwner.Ally,
+      num=1,
+      Random=False),
+    effect=EffectType.TakeDamage,
+    value=7,)
+],dect_='使所有友方单位获得 +4-1 , 对友方总部造成 7 点伤害',tl=0),
+CommandCard(3,[],'全频带阻塞干扰','',effects_=[
+  EffectData(
+    target=TargetChoose(
+      owner=TargetOwner.All,
+      num = ALL,
+      Random = False,
+    ),
+    effect=EffectType.AddAC,
+    value = 4,
+  )
+],dect_='使所有单位获得 +4 行动花费',tl=1),
+CommandCard(7,[],'死线扩散','',effects_=[
+  EffectData(
+    target=TargetChoose(
+      owner=TargetOwner.Enemy,
+      num = ALL,
+      Random = False,
+    ),
+    effect=EffectType.SetAtk,
+    value = 0,
+  ),
+  EffectData(
+    target=TargetChoose(
+      owner = TargetOwner.Enemy,
+      num = ALL,
+      Random = False,
+    ),
+    effect=EffectType.ADDAPS,
+    value = -2,
+  ),
+],dect_='使所有敌方单位攻击力为 0 ,友方失去2个行动点槽',tl=C),
 
-cardIds *= 40
+]
+
+cardIds = list(range(len(allCards)))
+
+cardIds *= 20
+
+def CardToHand(cid : int):
+  return HandCard(cid,allCards[cid].cost,[])
 
 
 
+@dataclass
+class HandCard():
+  id : int
+  cost : int
+  extraTags : list[Tag]
 
 def Shuffle():
   random.shuffle(cardIds)
+
+
+
