@@ -281,48 +281,54 @@ class Game():
   def CheckCondition(self, cdtn : ChooseCondition | None, tid : int, player : Player):
     if cdtn is None:
       return True
-    t = self.GetUnitById(tid)
-    flag : list[bool] = []
-    if t not in (HQ_A, HQ_B):
-      assert t is not None
-    if cdtn.actCost:
-      if self.Cmp(t.actionCost, cdtn.cmpT, cdtn.value):
-        flag.append(True)
+    if tid != HQ:
+      t = self.GetUnitById(tid)
+      flag : list[bool] = []
+      if t not in (HQ_A, HQ_B):
+        assert t is not None
+      if cdtn.actCost:
+        if self.Cmp(t.actionCost, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.atk:
+        if self.Cmp(t.atk, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.cost:
+        if self.Cmp(t.cost, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.dfns:
+        if self.Cmp(t.dfns, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.frontline:
+        if self.Cmp(t.fl, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.tag:
+        tagIdx = FindKeyw(t,cdtn.tag.keyword)
+        if tagIdx is not None and t.tags[tagIdx].value == cdtn.value:
+          flag.append(True)
+        else:
+          flag.append(False)
+      if cdtn.timeline:
+        raise Exception('代码没写')
+      if cdtn.tid:
+        if self.Cmp(t.id, cdtn.cmpT, cdtn.value):
+          flag.append(True)
+        else:
+          flag.append(False)
+    else:
+      if cdtn.dfns:
+        return self.Cmp(player.hq,cdtn.cmpT,cdtn.value)
       else:
-        flag.append(False)
-    if cdtn.atk:
-      if self.Cmp(t.atk, cdtn.cmpT, cdtn.value):
-        flag.append(True)
-      else:
-        flag.append(False)
-    if cdtn.cost:
-      if self.Cmp(t.cost, cdtn.cmpT, cdtn.value):
-        flag.append(True)
-      else:
-        flag.append(False)
-    if cdtn.dfns:
-      if self.Cmp(t.dfns, cdtn.cmpT, cdtn.value):
-        flag.append(True)
-      else:
-        flag.append(False)
-    if cdtn.frontline:
-      if self.Cmp(t.fl, cdtn.cmpT, cdtn.value):
-        flag.append(True)
-      else:
-        flag.append(False)
-    if cdtn.tag:
-      tagIdx = FindKeyw(t,cdtn.tag.keyword)
-      if tagIdx is not None and t.tags[tagIdx].value == cdtn.value:
-        flag.append(True)
-      else:
-        flag.append(False)
-    if cdtn.timeline:
-      raise Exception('代码没写')
-    if cdtn.tid:
-      if self.Cmp(t.id, cdtn.cmpT, cdtn.value):
-        flag.append(True)
-      else:
-        flag.append(False)
+        raise Exception('HYW')
       # if self.Cmp(t.fl, cdtn.cmpT, cdtn.value):
       #   flag.append(True)
       # else:
@@ -330,65 +336,78 @@ class Game():
 
   def ApplyEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
     for tid in targets:
-      t = self.GetUnitById(tid)
-      assert t is not None
-      if effectType == EffectType.AddAC:
-        assert type(value) == int
-        t.actionCost += value
-      elif  effectType == EffectType.AddAP:
-        assert type(value) == int
-        player.actionPoint += value
-      elif  effectType == EffectType.ADDAPS:
-        assert type(value) == int
-        player.apSlot += value
-      elif  effectType == EffectType.AddToHand:
-        assert type(value) == int
-        player.handCards.append(CardToHand(value))
-      elif  effectType == EffectType.AddTag:
-        assert type(value) == Tag
-        t.tags.append(value)
-      elif effectType == EffectType.Buff:
-        assert type(value) == tuple[int, int]
-        t.atk += value[0]
-        t.dfns += value[1]
-      elif effectType == EffectType.Deploy:
-        assert type(value) == int
-        raise Exception('代码没写')
-      elif effectType == EffectType.Destroy:
-        # assert type(value) == int
-        t.dfns = -1
-      elif effectType == EffectType.DrawCard:
-        assert type(value) == int
-        self.DrawCard(player.name,value)
-      elif effectType == EffectType.TakeDamage:
-        assert type(value) == int
-        dmg = ClacDamage(t.tags,value)
-        t.dfns -= dmg
-      elif effectType == EffectType.PutOnTop:
-        assert type(value) == int
-        player.deck.append(value)
-      elif effectType == EffectType.ShuffleIntoDeck:
-        assert type(value) == int
-        player.deck.append(value)
-        random.shuffle(player.deck)
-      elif effectType == EffectType.PutOnBottom:
-        assert type(value) == int
-        player.deck.insert(0,value)
-      elif effectType == EffectType.SetAC:
-        assert type(value) == int
-        t.actionCost = value
-      elif effectType == EffectType.SetAP:
-        assert type(value) == int
-        player.actionPoint = value
-      elif effectType == EffectType.SetAPS:
-        assert type(value) == int
-        player.apSlot = value
-      elif effectType == EffectType.SetAtk:
-        assert type(value) == int
-        t.atk = value
-      elif effectType == EffectType.SetDef:
-        assert type(value) == int
-        t.dfns = value
+      if tid != HQ:
+        t = self.GetUnitById(tid)
+        assert t is not None
+        if effectType == EffectType.AddAC:
+          assert type(value) == int
+          t.actionCost += value
+        elif  effectType == EffectType.AddAP:
+          assert type(value) == int
+          player.actionPoint += value
+        elif  effectType == EffectType.ADDAPS:
+          assert type(value) == int
+          player.apSlot += value
+        elif  effectType == EffectType.AddToHand:
+          assert type(value) == int
+          player.handCards.append(CardToHand(value))
+        elif  effectType == EffectType.AddTag:
+          assert type(value) == Tag
+          t.tags.append(value)
+        elif effectType == EffectType.Buff:
+          assert type(value) == tuple[int, int]
+          t.atk += value[0]
+          t.dfns += value[1]
+        elif effectType == EffectType.Deploy:
+          assert type(value) == int
+          raise Exception('代码没写')
+        elif effectType == EffectType.Destroy:
+          # assert type(value) == int
+          t.dfns = -1
+        elif effectType == EffectType.DrawCard:
+          assert type(value) == int
+          self.DrawCard(player.name,value)
+        elif effectType == EffectType.TakeDamage:
+          assert type(value) == int
+          dmg = ClacDamage(t.tags,value)
+          t.dfns -= dmg
+        elif effectType == EffectType.PutOnTop:
+          assert type(value) == int
+          player.deck.append(value)
+        elif effectType == EffectType.ShuffleIntoDeck:
+          assert type(value) == int
+          player.deck.append(value)
+          random.shuffle(player.deck)
+        elif effectType == EffectType.PutOnBottom:
+          assert type(value) == int
+          player.deck.insert(0,value)
+        elif effectType == EffectType.SetAC:
+          assert type(value) == int
+          t.actionCost = value
+        elif effectType == EffectType.SetAP:
+          assert type(value) == int
+          player.actionPoint = value
+        elif effectType == EffectType.SetAPS:
+          assert type(value) == int
+          player.apSlot = value
+        elif effectType == EffectType.SetAtk:
+          assert type(value) == int
+          t.atk = value
+        elif effectType == EffectType.SetDef:
+          assert type(value) == int
+          t.dfns = value
+      else:
+        if effectType == EffectType.SetDef:
+          assert type(value) == int
+          player.hq = value
+        elif effectType == EffectType.TakeDamage:
+          assert type(value) == int
+          player.hq -= value
+        elif effectType == EffectType.Buff:
+          assert type(value) == tuple[int,int]
+          player.hq += value[1]
+        else:
+          raise Exception('你看看指令卡传了个啥进来')
       
       
   def DeleteEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
