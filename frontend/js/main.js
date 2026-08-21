@@ -153,6 +153,12 @@ $(document).on("click", "#player-base-units", function() {
     }));
 
 });
+$(document).on("click", "#end-turn-button", function() {
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "end_turn"
+    }));
+});
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
     console.log("Received message:", data);
