@@ -77,8 +77,18 @@ class GameSession:
                 actorPlayer=player_side,
                 actionType=ActionType.Deploy,
                 actorId=state.playerA.handCards[card_index].id if player_side == "A" else state.playerB.handCards[card_index].id,
-                target=1 if player_side == "A" else 2
+                target=0 if player_side == "A" else 2,
+                handCardIdx=card_index
             )
+        elif data.get("op_type", None) == "end_turn":
+            self.game.TurnEnd(player_side)
+            self.game.totalTurn += 1
+            await self.broadcast_message({
+                "type": "show_message",
+                "message": "第 %d 回合" % self.game.totalTurn
+            })
+            await self.broadcast_state()
+            return
         else:
             await self.connections[player_side].send({
                 "type": "error",
