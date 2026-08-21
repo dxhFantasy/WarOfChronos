@@ -1,0 +1,38 @@
+[
+    {
+        "name" : "ZT99A主战坦克",
+        "attack": 6,
+        "defense": 8,
+        "cost": 6,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": ""
+    },
+    {
+        "name" : "2S38\"偏瘫\"",
+        "attack": 4,
+        "defense": 2,
+        "cost": 3,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": ""
+    },
+    {
+        "name" : "破釜沉舟",
+        "cost": 7,
+        "type": "command",
+        "effect": "使所有友方单位获得 +4-1 , 对友方总部造成 7 点伤害"
+    },
+    {
+        "name" : "全频带阻塞干扰",
+        "cost": 3,
+        "type": "command",
+        "effect": "使所有单位获得 +4 行动花费"
+    },
+    {
+        "name": "死线扩散",
+        "cost": 7,
+        "type": "command",
+        "effect": "使所有敌方单位攻击力为 0 ,友方失去2个行动点槽"
+    }
+]

@@ -3,7 +3,11 @@ let socket = new WebSocket(
 );
 const authorList = ["dxhFantasy", "lwjyreq"]
 let authorCache = new Array();
-
+let deployState = {
+    active : false,
+    card_index : -1,
+    card_element : null,
+}
 async function getAuthor(){
     let cache = localStorage.getItem("authors")
     if (cache) {
@@ -78,9 +82,80 @@ $("#ready-button").click(() => {
 $("#about-return").click(() => {
     hideAboutUI()
 })
+function cancelDeploy() {
+
+    deployState.active = false;
+    deployState.card_index = -1;
+    deployState.card_element = null;
+
+    $(".expanded-card")
+        .removeClass("selected")
+        .removeClass("hidden");
+
+    $(".deployable")
+        .removeClass("deployable");
+
+    $("#hand-overlay")
+        .removeClass("deploy-mode");
+
+    $("#close-hand")
+        .removeClass("hidden");
+
+    $("#end-turn-button")
+        .removeClass("hidden");
+    console.log("取消部署");
+}
+function enterDeploy(card_element) {
+    deployState.active = true;
+    deployState.card_element = card_element;
+    deployState.card_index =
+        Number(card_element.attr("data-index"));
+    console.log(card_element.attr("data-index"))
+    $(".expanded-card")
+        .not(card_element)
+        .addClass("hidden");
+    card_element.addClass("selected");
+    $("#hand-overlay")
+        .addClass("deploy-mode");
+    $("#player-base-units")
+        .addClass("deployable");
+    $("#close-hand")
+        .addClass("hidden");
+    $("#end-turn-button")
+        .addClass("hidden");
+}
+$(document).on("click", ".expanded-card", function(e){
+    console.log("click card");
+    e.stopPropagation();
+    let card = $(this);
+    if(card.hasClass("selected")){
+        card.removeClass("selected");
+        cancelDeploy();
+        return;
+    }
+    if (deployState.active){
+        cancelDeploy();
+    }
+    enterDeploy(card);
+})
+$(document).on("click", "#player-base-units", function() {
+    console.log("点击了玩家基地");
+    if (!deployState.active) {
+        return;
+    }
+    console.log("请求部署单位");
+    console.log("deployState:", deployState);
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "deploy_unit",
+        card_index: deployState.card_index,
+        target: "player_base"
+    }));
+
+});
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
-
+    console.log("Received message:", data);
     if( data.type === "room_created" ) {
         let roomId = data.room_id;
         showRoomUI(roomId);
@@ -101,9 +176,29 @@ socket.onmessage = (event) => {
     }
     if (data.type === "error"){
         showNotice(data.message, "warning")
+
+        if (deployState.active) {
+            cancelDeploy();
+        }
+    }
+    if (data.type === "show_message") {
+        console.log("Battle message:", data.message)
+        showBattleMessage(data.message)
+    }
+    if (data.type === "update_state") {
+        updateGameState(data)
     }
 }
-
+function updateGameState(stateData) {
+    console.log("Updating game state:", stateData);
+    $("#my-act-point").text(`行动点: ${stateData.my_act_point}`);
+    $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
+    $("#my-hq-hp").text(`HP: ${stateData.my_hq}`);
+    $("#enemy-hq-hp").text(`HP: ${stateData.enemy_hq}`);
+    renderCompactHand(stateData.my_handcards);
+    renderExpandedHand(stateData.my_handcards);
+    renderEnemyHand(stateData.enemy_hc_counts);
+}
 function enterGame() {
     $("#menu").addClass("hidden");
     $("#room-modal").removeClass("active");
@@ -111,6 +206,20 @@ function enterGame() {
     $("#ready-modal").removeClass("active");
 }
 
+const jobs = {
+    "dxhFantasy": "主策划/游戏设计",
+    "lwjyreq": "前端网页/联机功能",
+    "🌙 moon": "美术设计",
+    "箐川" : "卡牌设计"
+}
+$("#player-hand").click(function(){
+    $("#hand-overlay")
+        .addClass("active");
+});
+$("#close-hand").click(function(){
+    $("#hand-overlay")
+        .removeClass("active");
+});
 $(document).ready(() => {
     getAuthor().then(() => {
         authorCache.forEach((author) => {
@@ -128,7 +237,7 @@ $(document).ready(() => {
             <div class="author-info">
 
                 <h5 class="author-name">
-                    @${author.login} · ${author.login == "dxhFantasy" ? "主策划/游戏设计" : "前端网页/联机功能"}
+                    @${author.login} · ${jobs[author.login]}
                 </h5>
 
                 <a 
@@ -144,11 +253,40 @@ $(document).ready(() => {
         </li>            
         `;
         $("#author-list").append(authorItem);
-        })
+    });
+    let ctbrs = {
+        "🌙 moon" : "assets/avatars/guer.jpg",
+        "箐川" : "assets/avatars/pxy.jpg"
+    }
+    for (let name in ctbrs) {
+        let authorItem = `
+            <li class="author-item">
+
+            <img 
+                src="${ctbrs[name]}" 
+                class="rounded-circle"
+                width=60
+                height=60
+                alt="${name}"
+            >
+
+            <div class="author-info">
+
+                <h5 class="author-name">
+                    @${name} · ${jobs[name]}
+                </h5>
+
+            </div>
+
+        </li>            
+        `;
+        $("#author-list").append(authorItem);
+    }
+
     }).catch((_) => {
         let authorItem = `
         拉取作者信息失败`
         $("#author-list").append(authorItem);
     })
+    loadCardInfo()
 })
-console.log(createCard(testCard))
