@@ -553,12 +553,16 @@ class Game():
       elif(eType == ActionType.UseCommand):
         if entry.actorId is None:
           raise Exception('不能使用滚木指令')
+        if entry.handCardIdx is None:
+          raise Exception('不能用滚木手牌凭空使用指令')
         card : CommandCard = allCards[entry.actorId] # type: ignore
         if type(card) != CommandCard:
           raise Exception('单位不能当作指令使用 前端在干嘛')
         if playerStruct.actionPoint < card.cost:
           raise Exception('行动点不足')
         self.UseCommand(playerStruct,card,entry.target)
+        playerStruct.actionPoint -= playerStruct.handCards[entry.handCardIdx].cost
+        playerStruct.handCards.pop(entry.handCardIdx)
         ...# 重点
       elif(eType == ActionType.Deploy):
         if(entry.actorId is None):
@@ -587,8 +591,13 @@ class Game():
           assert entry.actorPlayer in ('A', 'B')
           newUnit.owner = entry.actorPlayer
           newUnit.fl = entry.target
+          if entry.handCardIdx is None:
+            raise Exception('不能用滚木手牌部署单位')
           self.Deploy(newUnit,entry.target, entry.actorPlayer)
-        
+          playerStruct.actionPoint -= playerStruct.handCards[entry.handCardIdx].cost
+          playerStruct.handCards.pop(entry.handCardIdx)
+          
+
         else: 
           print('TEXT',player,entry.target)
           raise Exception('不是你放单位给我放好的呀')
