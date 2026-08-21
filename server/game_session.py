@@ -3,6 +3,7 @@
 #消息格式提醒
 #A方总部的id是-1， B方是-2(对于Card而言)
 ##############################
+from __future__ import annotations
 from game.game import (
     Game, 
     LogEntry, 
@@ -112,7 +113,7 @@ class GameSession:
                 "cost": u.cost,
                 "actionCost": u.actionCost,
                 "tags": [t.keyword.value for t in u.tags],
-                "uType": u.uType,
+                "uType": (u.uType.name, u.uType.value),
                 "utl": u.utl
             })
         return l
@@ -121,7 +122,7 @@ class GameSession:
         for fl in frontlines:
             l.append({
                 "maxTargets" : fl.maxTargets,
-                "targets" : fl.targets
+                "targets" : self.handle_units(fl.targets)
             })
         return l
     def handle_bf(self, bf: list[Battlefield]):
