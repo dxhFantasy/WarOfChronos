@@ -187,9 +187,17 @@ socket.onmessage = (event) => {
     }
     if (data.type === "update_state") {
         updateGameState(data)
+
+        if (deployState.active){
+            cancelDeploy()
+        }
     }
 }
 function updateGameState(stateData) {
+    if(deployState.active){
+        cancelDeploy();
+    }
+
     console.log("Updating game state:", stateData);
     $("#my-act-point").text(`行动点: ${stateData.my_act_point}`);
     $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
