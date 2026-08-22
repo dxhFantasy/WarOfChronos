@@ -270,6 +270,7 @@ class Game():
       atk = ClacAtk(u.tags,u.atk)
       dmg = ClacDamage(t.tags,atk)
       t.dfns -= dmg
+      
 
       #受到反击伤害
       if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
