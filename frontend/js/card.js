@@ -76,10 +76,10 @@ function renderExpandedHand(cards) {
                 </div>
                 <div class="card-stats">
                     <span class="attack">
-                        ${info.attack}
+                        ⚔${info.attack}
                     </span>
                     <span class="hp">
-                        ${info.defense}
+                        🛡${info.defense}
                     </span>
                 </div>
                 <div class="card-text">

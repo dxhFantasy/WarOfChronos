@@ -29,10 +29,18 @@ function showNotice(
         },250);
     },2000);
 }
-function showBattleMessage(text, time=2000){
-    $(".message-bar").text(text);
-    $("#battle-message").removeClass("hidden");
+function showBattleMessage(
+    title,
+    subtitle="",
+    time=2000
+){
+
+    $(".message-bar").text(title);
+    $(".message-subtitle").text(subtitle);
+    $("#battle-message")
+        .removeClass("hidden");
     setTimeout(()=>{
-        $("#battle-message").addClass("hidden");
+        $("#battle-message")
+            .addClass("hidden");
     },time);
 }

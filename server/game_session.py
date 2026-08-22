@@ -83,10 +83,7 @@ class GameSession:
         elif data.get("op_type", None) == "end_turn":
             self.game.TurnEnd(player_side)
             self.game.totalTurn += 1
-            await self.broadcast_message({
-                "type": "show_message",
-                "message": "第 %d 回合" % self.game.totalTurn
-            })
+            await self.broadcast_turn()
             await self.broadcast_state()
             return
         else:
@@ -183,13 +180,25 @@ class GameSession:
         )
     async def broadcast_message(self, message: dict[str, Any]):
         await self.broadcaster(message)
+    async def broadcast_turn(self):
+        await self.connections["A"].send(
+            {
+                "type": "show_message",
+                "message": "第 %d 回合" % self.game.totalTurn,
+                "subtitle": ("我方行动" if self.game.totalTurn % 2 == 1 else "对方行动")
+            }
+        )
+        await self.connections["B"].send(
+            {
+                "type": "show_message",
+                "message": "第 %d 回合" % self.game.totalTurn,
+                "subtitle": ("我方行动" if self.game.totalTurn % 2 == 0 else "对方行动")
+            }
+        )
     async def start_game(self):
         print("Game session started.")
         self.game.totalTurn = 1
-        await self.broadcast_message({
-            "type": "show_message",
-            "message": "第 %d 回合" % self.game.totalTurn
-        })
+        await self.broadcast_turn()
         self.game.InitDraw()
         self.game.TurnStart('B')
         await self.broadcast_state()

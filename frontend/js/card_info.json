@@ -34,5 +34,39 @@
         "cost": 7,
         "type": "command",
         "effect": "使所有敌方单位攻击力为 0 ,友方失去2个行动点槽"
+    },
+    {
+        "name": "强-5 强击机",
+        "attack": 5,
+        "defense": 4,
+        "cost": 6,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": ""
+    },
+    {
+        "name": "陈庆之北伐",
+        "cost": 5,
+        "type": "command",
+        "effect": "使所有敌方单位获得-2-3"
+    },
+    {
+        "name": "BMPT-\"终结者\"",
+        "attack": 7,
+        "defense": 5,
+        "cost": 7,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": ""
+    },
+    {
+        "name": "白袍军",
+        "attack": 4,
+        "defense": 5,
+        "cost": 4,
+        "actionCost": 0,
+        "type": "unit",
+        "effect": ""
     }
+    
 ]

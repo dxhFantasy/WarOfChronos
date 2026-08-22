@@ -188,8 +188,12 @@ socket.onmessage = (event) => {
         }
     }
     if (data.type === "show_message") {
-        console.log("Battle message:", data.message)
-        showBattleMessage(data.message)
+        console.log(data)
+        if(data.subtitle !== undefined) {
+            showBattleMessage(data.message, data.subtitle)
+        } else {
+            showBattleMessage(data.message)
+        }
     }
     if (data.type === "update_state") {
         updateGameState(data)
@@ -217,11 +221,11 @@ function renderUnits(units, container){
                 </div>
                 <div class="unit-stats">
                     <span class="attack">
-                        ${unit.atk}
+                        ⚔${unit.atk}
                     </span>
 
                     <span class="hp">
-                        ${unit.dfns}
+                        🛡${unit.dfns}
                     </span>
                 </div>
 
