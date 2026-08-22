@@ -15,6 +15,13 @@ def FindKeyw(u : Unit,k : Keyword):
       return u.tags.index(t)
   return None
 
+def CheckTimeWarp(cardId : int):
+  card : UnitCard | CommandCard = allCards[cardId]
+  for t in card.tags:
+    if t.keyword == Keyword.TimeWarp:
+      return True
+  return False
+
 
 DEBUG = 1
 
@@ -234,8 +241,14 @@ class Game():
       self.attacked.append(u.id)
       self.moved.append(u.id)
 
-    if(FindKeyw(u,Keyword.Deploy) is not None):
-      ...
+    
+    tmp = FindKeyw(u,Keyword.Deploy)
+    if tmp is not None:
+      es = u.tags[tmp].value
+      assert type(es) == list[EffectData]
+      playerStruct = self.GetPlayer(u.owner)
+      assert playerStruct is not None
+      self.ProcessEffect(es,playerStruct)
     
 
   def Attack(self,u : Unit ,tid : int | None):
@@ -257,6 +270,7 @@ class Game():
       atk = ClacAtk(u.tags,u.atk)
       dmg = ClacDamage(t.tags,atk)
       t.dfns -= dmg
+      
 
       #受到反击伤害
       if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
@@ -469,10 +483,9 @@ class Game():
       elif effectType == EffectType.SetDef:
         assert type(value) == int
         raise Exception('不存在的需求不予实现')
-
-  def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
-    es = command.effects
-
+      
+  
+  def ProcessEffect(self, es : list[EffectData], player : Player, tid : int | None = None):
     for e in es:
       targets : list[int] = []
       
@@ -531,6 +544,10 @@ class Game():
         self.ApplyEffects(targets,e.effect,e.value, player)
         if e.endTime:
           self.clocks.append(Clock(player,e.endTime,targets,e,e.endTime.info))
+
+  def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
+    es = command.effects
+    self.ProcessEffect(es, player, tid)
 
 
 
@@ -667,6 +684,13 @@ class Game():
         f = False
         for u in fl.targets:
           if(u.dfns <= 0):
+            tmp = FindKeyw(u,Keyword.Deathrattle)
+            if tmp is not None:
+              es = u.tags[tmp].value
+              assert type(es) == list[EffectData]
+              player = self.GetPlayer(u.owner)
+              assert player is not None
+              self.ProcessEffect(es,player)
             fl.targets.pop(fl.targets.index(u))
             bf.unitsNum -= 1
             continue
