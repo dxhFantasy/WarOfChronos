@@ -625,7 +625,12 @@ h1 {
 .unit-defense {
     color:#22c55e;
 }
-#use-card-button {
-    position:fixed;
+#use-command-button {
+    position: fixed;
     z-index: 9999;
+    font-size:25px;
+    cursor:pointer;
+}
+#hand-overlay.deploy-mode #use-command-button {
+    pointer-events:auto;
 }
