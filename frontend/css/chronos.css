@@ -353,25 +353,40 @@ h1 {
     font-size:20px;
 }
 #battle-message {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    pointer-events: none;
+    position:absolute;
+    inset:0;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    pointer-events:none;
+}
+.message-container {
+    width:70%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
 }
 
 .message-bar {
-    width: 70%;
-    padding: 20px 0;
-    text-align: center;
-    font-size: 48px;
-    font-weight: bold;
-    color: white;
-    background: rgba(0,0,0,0.65);
-    border-top: 2px solid white;
-    border-bottom: 2px solid white;
-    letter-spacing: 10px;
+    width:100%;
+    padding:20px 0;
+    text-align:center;
+    font-size:48px;
+    font-weight:bold;
+    color:white;
+    background:rgba(0,0,0,0.65);
+    border-top:2px solid white;
+    border-bottom:2px solid white;
+    letter-spacing:10px;
+}
+.message-subtitle {
+    margin-top:10px;
+    padding:8px 30px;
+    font-size:22px;
+    color:#cbd5e1;
+    background:rgba(0,0,0,0.5);
+    border-radius:8px;
+    letter-spacing:3px;
 }
 #battle-message .message-bar{
     animation:
