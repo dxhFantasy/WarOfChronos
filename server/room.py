@@ -119,7 +119,7 @@ class Room:
             pass
 def create_room() -> Room:
     room_id = "".join(
-        random.choice(string.ascii_uppercase)
+        str(random.choice(list(range(10))))
         for _ in range(6)
     )
 

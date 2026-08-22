@@ -104,6 +104,14 @@ function cancelDeploy() {
 
     $("#end-turn-button")
         .removeClass("hidden");
+
+    $("#use-command-button")
+        .addClass("hidden")
+        .css({
+            left:"",
+            top:"",
+            transform:""
+        });
     console.log("取消部署");
 }
 function enterDeploy(card_element) {
@@ -303,7 +311,9 @@ const jobs = {
     "dxhFantasy": "主策划/游戏设计",
     "lwjyreq": "前端网页/联机功能",
     "🌙 moon": "美术设计",
-    "箐川" : "卡牌设计"
+    "箐川" : "卡牌设计",
+    "庆之" : "卡牌设计",
+    "Midsummer": "忠实用户",
 }
 $("#player-hand").click(function(){
     $("#hand-overlay")
@@ -349,7 +359,9 @@ $(document).ready(() => {
     });
     let ctbrs = {
         "🌙 moon" : "assets/avatars/guer.jpg",
-        "箐川" : "assets/avatars/pxy.jpg"
+        "箐川" : "assets/avatars/pxy.jpg",
+        "庆之" : "assets/avatars/lrz.jpg",
+        "Midsummer": "assets/avatars/lzj.jpg"
     }
     for (let name in ctbrs) {
         let authorItem = `
