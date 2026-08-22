@@ -182,7 +182,7 @@ h1 {
 
 }
 .unit-zone {
-    height:120px;
+    height:160px;
     display:flex;
     justify-content:center;
     align-items:center;
@@ -542,4 +542,71 @@ h1 {
     z-index: 2000;
     pointer-events: auto;
     cursor: pointer;
+}
+.battle-unit {
+    width:120px;
+    height:160px;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    background:#1e293b;
+    border:2px solid #64748b;
+    border-radius:8px;
+    overflow:hidden;
+    box-sizing:border-box;
+    flex-shrink:0;
+}
+/* 行动力 */
+.unit-cost {
+    position:absolute;
+    left:-5px;
+    top:-5px;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    background:#2563eb;
+    color:white;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-size:16px;
+    font-weight:bold;
+}
+/* 名称 */
+.unit-name {
+    width:100%;
+    height:24px;
+    text-align:center;
+    line-height:24px;
+    font-size:14px;
+    font-weight:bold;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
+/* 图片 */
+.unit-image {
+    width:100%;
+    height:70px;
+    flex-shrink:0;
+}
+.unit-image img {
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+/* 攻防 */
+.unit-stats {
+    height:35px;
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    font-size:18px;
+    font-weight:bold;
+}
+.unit-attack {
+    color:#ef4444;
+}
+.unit-defense {
+    color:#22c55e;
 }

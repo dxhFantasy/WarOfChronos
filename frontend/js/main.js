@@ -199,8 +199,48 @@ socket.onmessage = (event) => {
         }
     }
 }
-function renderBattlefield() {
-    
+function renderUnits(units, container){
+    console.log(units)
+    container.empty()
+    units.map((unit, unit_idx) => {
+        let info = cardInfo[unit.cardId]
+        let element = $(`
+            <div class="battle-unit" unit-idx=${unit_idx}>
+                <div class="unit-action-cost">
+                    ${unit.actionCost}
+                </div>
+                <div class="unit-name">
+                    ${info.name}
+                </div>
+                <div class="unit-image">
+                    <img src="assets/cards/${unit.card_id}.jpg">
+                </div>
+                <div class="unit-stats">
+                    <span class="attack">
+                        ${unit.atk}
+                    </span>
+
+                    <span class="hp">
+                        ${unit.dfns}
+                    </span>
+                </div>
+
+            </div>
+        `)
+
+        container.append(element)
+    })
+}
+function renderBattlefield(cur_bf) {
+    let frontlines = cur_bf.frontlines
+    const containers = [
+        $("#player-base-units"),
+        $("frontline-units"),
+        $("#enemy-base-units"),
+    ]
+    containers.map((container, idx) => {
+        renderUnits(frontlines[idx].targets, container);
+    })
 }
 function updateGameState(stateData) {
     if(deployState.active){
@@ -212,6 +252,8 @@ function updateGameState(stateData) {
     $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
     $("#my-hq-hp").text(`HP: ${stateData.my_hq}`);
     $("#enemy-hq-hp").text(`HP: ${stateData.enemy_hq}`);
+    $("#my-deck-counts").text(`${stateData.my_deck_cnts}`)
+    $("#enemy-deck-counts").text(`${stateData.enemy_deck_counts}`)
     renderCompactHand(stateData.my_handcards);
     renderExpandedHand(stateData.my_handcards);
     renderEnemyHand(stateData.enemy_hc_counts);
