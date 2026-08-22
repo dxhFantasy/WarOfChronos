@@ -86,6 +86,22 @@ class GameSession:
             await self.broadcast_turn()
             await self.broadcast_state()
             return
+        elif data.get("op_type", None) == "use_card":
+            card_index: int = data.get("card_index", None)
+            if card_index is None:
+                await self.connections[player_side].send({
+                    "type": "error",
+                    "message": "缺少必要参数"
+                })
+                return
+            entry = LogEntry(
+                self.game.totalTurn,
+                actorPlayer=player_side,
+                actionType=ActionType.UseCommand,
+                actorId=state.playerA.handCards[card_index].id if player_side == "A" else state.playerB.handCards[card_index].id,
+                target=None,
+                handCardIdx=card_index
+            )
         else:
             await self.connections[player_side].send({
                 "type": "error",

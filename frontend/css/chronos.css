@@ -625,3 +625,7 @@ h1 {
 .unit-defense {
     color:#22c55e;
 }
+#use-card-button {
+    position:fixed;
+    z-index: 9999;
+}

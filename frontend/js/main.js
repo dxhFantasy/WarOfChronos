@@ -8,6 +8,7 @@ let deployState = {
     card_index : -1,
     card_element : null,
 }
+let handcards = []
 async function getAuthor(){
     let cache = localStorage.getItem("authors")
     if (cache) {
@@ -123,6 +124,23 @@ function enterDeploy(card_element) {
         .addClass("hidden");
     $("#end-turn-button")
         .addClass("hidden");
+    console.log(91781369,cardInfo[handcards[deployState.card_index].id].type)
+    if (cardInfo[handcards[deployState.card_index].id].type === "command") {
+        updateCardButtonPosition(card_element)
+        $("#use-command-button").removeClass("hidden")
+    }
+}
+function updateCardButtonPosition(card){
+
+    let rect = card[0].getBoundingClientRect();
+
+    $("#use-command-button")
+        .css({
+            left: `${rect.right + 30}px`,
+            top: `${rect.top + rect.height / 2}px`,
+            transform:"translateY(-50%)"
+        });
+
 }
 $(document).on("click", ".expanded-card", function(e){
     console.log("click card");
@@ -203,6 +221,16 @@ socket.onmessage = (event) => {
         }
     }
 }
+$("#use-command-button").click(() => {
+    if (!deployState.active) return;
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "use_card",
+        card_index: deployState.card_index
+    }));
+    cancelDeploy()
+    $("#use-command-button").addClass("hidden")
+})
 function renderUnits(units, container){
     console.log(units)
     container.empty()
@@ -252,6 +280,7 @@ function updateGameState(stateData) {
     }
 
     console.log("Updating game state:", stateData);
+    handcards = stateData.my_handcards;
     $("#my-act-point").text(`行动点: ${stateData.my_act_point}`);
     $("#enemy-act-point").text(`行动点: ${stateData.enemy_act_point}`);
     $("#my-hq-hp").text(`HP: ${stateData.my_hq}`);
