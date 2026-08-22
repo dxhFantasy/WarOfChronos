@@ -127,19 +127,20 @@ class GameSession:
                 "utl": u.utl
             })
         return l
-    def handle_frontlines(self, frontlines: list[Frontline]):
+    def handle_frontlines(self, frontlines: list[Frontline], view: Literal['A', 'B']):
         l = []
         for fl in frontlines:
             l.append({
                 "maxTargets" : fl.maxTargets,
                 "targets" : self.handle_units(fl.targets)
             })
+        l.reverse() if view == "B" else None
         return l
-    def handle_bf(self, bf: list[Battlefield]):
+    def handle_bf(self, bf: list[Battlefield], view: Literal['A', 'B']):
         l = []
         for i in bf:
             l.append({
-                "frontlines" : self.handle_frontlines(i.frontlines),
+                "frontlines" : self.handle_frontlines(i.frontlines, view),
                 "unitsNum" : i.unitsNum
             })
         return l
@@ -156,6 +157,8 @@ class GameSession:
             state_dict["enemy_hq"] = state.playerB.hq
             state_dict["my_handcards"] = self.handle_handcards(state.playerA.handCards)
             state_dict["enemy_hc_counts"] = len(state.playerB.handCards)
+            state_dict["my_deck_cnts"] = len(state.playerA.deck)
+            state_dict["enemy_deck_counts"] = len(state.playerB.deck)
         else:
             state_dict['my_act_point'] = state.playerB.actionPoint
             state_dict["enemy_act_point"] = state.playerA.actionPoint
@@ -163,9 +166,11 @@ class GameSession:
             state_dict["enemy_hq"] = state.playerA.hq
             state_dict["my_handcards"] = self.handle_handcards(state.playerB.handCards)
             state_dict["enemy_hc_counts"] = len(state.playerA.handCards)
+            state_dict["my_deck_cnts"] = len(state.playerB.deck)
+            state_dict["enemy_deck_counts"] = len(state.playerA.deck)
         state_dict["cur_bf"] = state.cbf
         state_dict["events"] = state.evt
-        state_dict["battlefields"] = self.handle_bf(state.battlefields)
+        state_dict["battlefields"] = self.handle_bf(state.battlefields, view)
         state_dict["type"] = "update_state"
         return state_dict
     async def broadcast_state(self):
