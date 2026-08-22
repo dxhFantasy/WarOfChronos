@@ -199,6 +199,9 @@ socket.onmessage = (event) => {
         }
     }
 }
+function renderBattlefield() {
+    
+}
 function updateGameState(stateData) {
     if(deployState.active){
         cancelDeploy();
@@ -212,6 +215,7 @@ function updateGameState(stateData) {
     renderCompactHand(stateData.my_handcards);
     renderExpandedHand(stateData.my_handcards);
     renderEnemyHand(stateData.enemy_hc_counts);
+    renderBattlefield(stateData.battlefields[stateData.cur_bf]);
 }
 function enterGame() {
     $("#menu").addClass("hidden");
