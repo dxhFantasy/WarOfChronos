@@ -15,6 +15,13 @@ def FindKeyw(u : Unit,k : Keyword):
       return u.tags.index(t)
   return None
 
+def CheckTimeWarp(cardId : int):
+  card : UnitCard | CommandCard = allCards[cardId]
+  for t in card.tags:
+    if t.keyword == Keyword.TimeWarp:
+      return True
+  return False
+
 
 DEBUG = 1
 
