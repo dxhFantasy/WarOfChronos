@@ -51,7 +51,7 @@ class cmp(Enum):              #字面意思
 
 
 
-HQ = 114514
+HQ = 350234
 @dataclass
 class ChooseCondition():      #选择目标的条件
   tid : int | None = None #可能要打总部
@@ -80,7 +80,7 @@ class TriggerConditionType(Enum):#效果触发条件
 
 @dataclass
 class TriggerCondition():        #条件指示器
-  cdtnType :TriggerConditionType
+  cdtnType : TriggerConditionType
   target : TargetChoose | int | None = None # int用于指示事件id
 
 

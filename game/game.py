@@ -347,142 +347,160 @@ class Game():
       #   flag.append(True)
       # else:
       #   flag.append(False)
+    for f in flag:
+      if not f:
+        return False
+    return True
 
   def ApplyEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
     for tid in targets:
       if tid != HQ:
         t = self.GetUnitById(tid)
-        assert t is not None
-        if effectType == EffectType.AddAC:
-          assert type(value) == int
-          t.actionCost += value
-        elif  effectType == EffectType.AddAP:
-          assert type(value) == int
-          player.actionPoint += value
-        elif  effectType == EffectType.ADDAPS:
-          assert type(value) == int
-          player.apSlot += value
-        elif  effectType == EffectType.AddToHand:
-          assert type(value) == int
-          player.handCards.append(CardToHand(value))
-        elif  effectType == EffectType.AddTag:
-          assert type(value) == Tag
-          t.tags.append(value)
-        elif effectType == EffectType.Buff:
-          assert type(value) == tuple[int, int]
-          t.atk += value[0]
-          t.dfns += value[1]
-        elif effectType == EffectType.Deploy:
-          assert type(value) == int
-          raise Exception('代码没写')
-        elif effectType == EffectType.Destroy:
-          # assert type(value) == int
-          t.dfns = -1
-        elif effectType == EffectType.DrawCard:
-          assert type(value) == int
-          self.DrawCard(player.name,value)
-        elif effectType == EffectType.TakeDamage:
-          assert type(value) == int
-          dmg = ClacDamage(t.tags,value)
-          t.dfns -= dmg
-        elif effectType == EffectType.PutOnTop:
-          assert type(value) == int
-          player.deck.append(value)
-        elif effectType == EffectType.ShuffleIntoDeck:
-          assert type(value) == int
-          player.deck.append(value)
-          random.shuffle(player.deck)
-        elif effectType == EffectType.PutOnBottom:
-          assert type(value) == int
-          player.deck.insert(0,value)
-        elif effectType == EffectType.SetAC:
-          assert type(value) == int
-          t.actionCost = value
-        elif effectType == EffectType.SetAP:
-          assert type(value) == int
-          player.actionPoint = value
-        elif effectType == EffectType.SetAPS:
-          assert type(value) == int
-          player.apSlot = value
-        elif effectType == EffectType.SetAtk:
-          assert type(value) == int
-          t.atk = value
-        elif effectType == EffectType.SetDef:
-          assert type(value) == int
-          t.dfns = value
+        if t is None:
+          raise Exception('err01')
+        try:
+          if effectType == EffectType.AddAC:
+            assert type(value) == int
+            t.actionCost += value
+          elif  effectType == EffectType.AddAP:
+            assert type(value) == int
+            player.actionPoint += value
+          elif  effectType == EffectType.ADDAPS:
+            assert type(value) == int
+            player.apSlot += value
+          elif  effectType == EffectType.AddToHand:
+            assert type(value) == int
+            player.handCards.append(CardToHand(value))
+          elif  effectType == EffectType.AddTag:
+            assert type(value) == Tag
+            t.tags.append(value)
+          elif effectType == EffectType.Buff:
+            print(type(value))
+            assert type(value) == tuple
+            t.atk += value[0]
+            t.dfns += value[1]
+          elif effectType == EffectType.Deploy:
+            assert type(value) == int
+            raise Exception('代码没写')
+          elif effectType == EffectType.Destroy:
+            # assert type(value) == int
+            t.dfns = -1
+          elif effectType == EffectType.DrawCard:
+            assert type(value) == int
+            self.DrawCard(player.name,value)
+          elif effectType == EffectType.TakeDamage:
+            assert type(value) == int
+            dmg = ClacDamage(t.tags,value)
+            t.dfns -= dmg
+          elif effectType == EffectType.PutOnTop:
+            assert type(value) == int
+            player.deck.append(value)
+          elif effectType == EffectType.ShuffleIntoDeck:
+            assert type(value) == int
+            player.deck.append(value)
+            random.shuffle(player.deck)
+          elif effectType == EffectType.PutOnBottom:
+            assert type(value) == int
+            player.deck.insert(0,value)
+          elif effectType == EffectType.SetAC:
+            assert type(value) == int
+            t.actionCost = value
+          elif effectType == EffectType.SetAP:
+            assert type(value) == int
+            player.actionPoint = value
+          elif effectType == EffectType.SetAPS:
+            assert type(value) == int
+            player.apSlot = value
+          elif effectType == EffectType.SetAtk:
+            assert type(value) == int
+            t.atk = value
+          elif effectType == EffectType.SetDef:
+            assert type(value) == int
+            t.dfns = value
+          t.atk = max(t.atk, 0)
+        except AssertionError:
+          print('err02')
       else:
-        if effectType == EffectType.SetDef:
-          assert type(value) == int
-          player.hq = value
-        elif effectType == EffectType.TakeDamage:
-          assert type(value) == int
-          player.hq -= value
-        elif effectType == EffectType.Buff:
-          assert type(value) == tuple[int,int]
-          player.hq += value[1]
-        else:
-          raise Exception('你看看指令卡传了个啥进来')
+        try:
+          if effectType == EffectType.SetDef:
+            assert type(value) == int
+            player.hq = value
+          elif effectType == EffectType.TakeDamage:
+            assert type(value) == int
+            player.hq -= value
+          elif effectType == EffectType.Buff:
+            assert type(value) == tuple[int,int]
+            player.hq += value[1]
+          else:
+            raise Exception('你看看指令卡传了个啥进来')
+          
+        except AssertionError:
+          print('err03')
       
       
   def DeleteEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
     for tid in targets:
       t = self.GetUnitById(tid)
-      assert t is not None
-      if effectType == EffectType.AddAC:
-        assert type(value) == int
-        t.actionCost -= value
-      elif  effectType == EffectType.AddAP:
-        assert type(value) == int
-        player.actionPoint -= value
-      elif  effectType == EffectType.ADDAPS:
-        assert type(value) == int
-        player.apSlot -= value
-      elif  effectType == EffectType.AddToHand:
-        assert type(value) == int
-        # player.handCards.append(CardToHand(value))
-        raise Exception('不存在的需求不予实现')
-      elif  effectType == EffectType.AddTag:
-        assert type(value) == Tag
-        t.tags.pop(t.tags.index(value))
-      elif effectType == EffectType.Buff:
-        assert type(value) == tuple[int, int]
-        t.atk -= value[0]
-        t.dfns -= value[1]
-      elif effectType == EffectType.Deploy:
-        assert type(value) == int
-        raise Exception('代码没写')
-      elif effectType == EffectType.Destroy:
-        # assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.DrawCard:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.TakeDamage:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.PutOnTop:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.ShuffleIntoDeck:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.PutOnBottom:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.SetAC:
-        t.actionCost = allCards[t.cardId].actionCost # type: ignore
-      elif effectType == EffectType.SetAP:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.SetAPS:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.SetAtk:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
-      elif effectType == EffectType.SetDef:
-        assert type(value) == int
-        raise Exception('不存在的需求不予实现')
+      if t is None:
+        continue
+      else:
+        assert t is not None
+        if effectType == EffectType.AddAC:
+          assert type(value) == int
+          t.actionCost -= value
+        elif  effectType == EffectType.AddAP:
+          assert type(value) == int
+          player.actionPoint -= value
+        elif  effectType == EffectType.ADDAPS:
+          assert type(value) == int
+          player.apSlot -= value
+        elif  effectType == EffectType.AddToHand:
+          assert type(value) == int
+          # player.handCards.append(CardToHand(value))
+          raise Exception('不存在的需求不予实现')
+        elif  effectType == EffectType.AddTag:
+          assert type(value) == Tag
+          t.tags.pop(t.tags.index(value))
+        elif effectType == EffectType.Buff:
+          assert type(value) == tuple
+          t.atk -= value[0]
+          t.dfns -= value[1]
+        elif effectType == EffectType.Deploy:
+          assert type(value) == int
+          raise Exception('代码没写')
+        elif effectType == EffectType.Destroy:
+          # assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.DrawCard:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.TakeDamage:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.PutOnTop:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.ShuffleIntoDeck:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.PutOnBottom:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.SetAC:
+          t.actionCost = allCards[t.cardId].actionCost # type: ignore
+        elif effectType == EffectType.SetAP:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.SetAPS:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.SetAtk:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        elif effectType == EffectType.SetDef:
+          assert type(value) == int
+          raise Exception('不存在的需求不予实现')
+        t.atk = max(t.atk, 0)
       
   
   def ProcessEffect(self, es : list[EffectData], player : Player, tid : int | None = None):
@@ -490,37 +508,85 @@ class Game():
       targets : list[int] = []
       
       #判断目标指定合法性/分配指令目标
-      if e.target.num == 0:
-        targets.append(-10086) # 占位符 防止判断目标不合法
-      
-      if not e.target.Random:
-        if e.target.num == 1:  #非随机目标要么1要么全部
-          if tid is None:
-            raise Exception('目标未指定')
-          if self.CheckCondition(e.target.condition, tid, player):
-            targets.append(tid)
-        # elif e.target.num != ALL:
-        #   for _ in range(e.target.num):
-        #     ...
-        else:
+      if e.target.condition is None or (e.target.condition and e.target.condition.tid != HQ):
+        if e.target.num == 0:
+          targets.append(-10086) # 占位符 防止判断目标不合法
+        
+        if not e.target.Random:
+          if e.target.num != ALL:  # 非随机目标要么1要么全部
+            print('use:',e.target.num,tid)
+            if tid is None:
+              raise Exception('目标未指定')
+            #判断单位所有者是否合法
+            f : bool = False
+            if e.target.owner == TargetOwner.Ally:
+              tu = self.GetUnitById(tid)
+              assert tu is not None
+              if player.name == tu.owner:
+                f = True
+            elif e.target.owner == TargetOwner.Enemy:
+              tu = self.GetUnitById(tid)
+              assert tu is not None
+              if player.name != tu.owner:
+                f = True
+            else:
+              f = True
+            #---
+            if f and self.CheckCondition(e.target.condition, tid, player):
+              targets.append(tid)
+          else:
+            for fl in self.battlefields[self.currentBF].frontlines:
+              for u in fl.targets:
+                # print(u.id,' owner ',u.owner)
+                # print('player ',player.name)
+                # print(player.name == u.owner)
+                #判断单位所有者是否合法
+                f : bool = False
+                if e.target.owner == TargetOwner.Ally:
+                  if player.name == u.owner:
+                    f = True
+                elif e.target.owner == TargetOwner.Enemy:
+                  if player.name != u.owner:
+                    f = True
+                else:
+                  f = True
+                #---
+
+                if f and self.CheckCondition(e.target.condition, u.id, player):
+                  targets.append(u.id)
+        else: #随机选择目标
+          temp : list[int] = []
           for fl in self.battlefields[self.currentBF].frontlines:
             for u in fl.targets:
-              if self.CheckCondition(e.target.condition, u.id, player):
-                targets.append(u.id)
-      else: #随机选择目标
-        temp : list[int] = []
-        for fl in self.battlefields[self.currentBF].frontlines:
-          for u in fl.targets:
-            if self.CheckCondition(e.target.condition, u.id, player):
-              temp.append(u.id) #候选目标
-        random.shuffle(temp)#随机选择目标
-        targets = temp[0:e.target.num]
-      
-      
-      if len(targets) == 0:
-        raise Exception('目标不合法')
+
+              #判断单位所有者是否合法
+              f : bool = False
+              if e.target.owner == TargetOwner.Ally:
+                if player.name == u.owner:
+                  f = True
+              elif e.target.owner == TargetOwner.Enemy:
+                if player.name != u.owner:
+                  f = True
+              else:
+                f = True
+              #---
+
+              if f and self.CheckCondition(e.target.condition, u.id, player):
+                temp.append(u.id) #候选目标
+          random.shuffle(temp)#随机选择目标
+          targets = temp[0:e.target.num]
+        
+        
+        if len(targets) == 0:
+          raise Exception('目标不合法')
+      else:
+        if (e.target.condition and e.target.condition.tid == HQ):
+          targets.append(HQ)
+        pass
+        print('fxxk you')
       #====判断结束====
 
+      print('targets:',targets)
       flag = False
       if e.triggerCondition:#判断触发条件
         for triCdtn in e.triggerCondition:
@@ -538,11 +604,14 @@ class Game():
                   break
               if find:
                 break
+      else:
+        flag = True
       #====判断结束====
 
       if flag:#处理指令效果
+        print('Processing Command Effects')
         self.ApplyEffects(targets,e.effect,e.value, player)
-        if e.endTime:
+        if e.endTime is not None:
           self.clocks.append(Clock(player,e.endTime,targets,e,e.endTime.info))
 
   def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
@@ -721,6 +790,7 @@ class Game():
             self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
           elif c.info == END:
             self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+          self.clocks.pop(self.clocks.index(c))
         else:
           c.Time.turnCount -= 1
 
@@ -757,6 +827,7 @@ class Game():
             self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
           elif c.info == END:
             self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+          self.clocks.pop(self.clocks.index(c))
         else:
           c.Time.turnCount -= 1
     self.TurnStart(player)
