@@ -67,6 +67,18 @@
         "actionCost": 0,
         "type": "unit",
         "effect": ""
+    },
+    {
+        "name": "王莽",
+        "cost": 4,
+        "type": "command",
+        "effect": "穿梭,抽 2 张牌"
+    },
+    {
+        "name": "改革开放",
+        "cost": 5,
+        "type": "command",
+        "effect": "抽 3 张牌"
     }
     
 ]
