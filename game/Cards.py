@@ -140,7 +140,49 @@ UnitCard(
   owner_='N',
   type_=UnitType.infantry,
   timeline=A
-)
+),
+CommandCard(
+  cost_=4,
+  tags_=[
+    Tag(
+      keyword=Keyword.TimeWarp
+    )
+  ],
+  name_='王莽',
+  owner_='',
+  effects_=[
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False
+      ),
+      effect=EffectType.DrawCard,
+      value=2
+    )
+  ],
+  dect_='穿梭,抽 2 张牌',
+  tl = A
+),
+CommandCard(
+  5,
+  tags_=[],
+  name_='改革开放',
+  owner_='',
+  effects_=[
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False
+      ),
+      effect=EffectType.DrawCard,
+      value=2
+    )
+  ],
+  dect_='抽 3 张牌',
+  tl=B
+),
 ]
 
 cardIds = list(range(len(allCards)))

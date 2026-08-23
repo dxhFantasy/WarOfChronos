@@ -355,71 +355,77 @@ class Game():
   def ApplyEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
     for tid in targets:
       if tid != HQ:
-        t = self.GetUnitById(tid)
-        if t is None:
-          raise Exception('err01')
-        try:
-          if effectType == EffectType.AddAC:
-            assert type(value) == int
-            t.actionCost += value
-          elif  effectType == EffectType.AddAP:
-            assert type(value) == int
-            player.actionPoint += value
-          elif  effectType == EffectType.ADDAPS:
-            assert type(value) == int
-            player.apSlot += value
-          elif  effectType == EffectType.AddToHand:
-            assert type(value) == int
-            player.handCards.append(CardToHand(value))
-          elif  effectType == EffectType.AddTag:
-            assert type(value) == Tag
-            t.tags.append(value)
-          elif effectType == EffectType.Buff:
-            print(type(value))
-            assert type(value) == tuple
-            t.atk += value[0]
-            t.dfns += value[1]
-          elif effectType == EffectType.Deploy:
-            assert type(value) == int
-            raise Exception('代码没写')
-          elif effectType == EffectType.Destroy:
-            # assert type(value) == int
-            t.dfns = -1
-          elif effectType == EffectType.DrawCard:
-            assert type(value) == int
-            self.DrawCard(player.name,value)
-          elif effectType == EffectType.TakeDamage:
-            assert type(value) == int
-            dmg = ClacDamage(t.tags,value)
-            t.dfns -= dmg
-          elif effectType == EffectType.PutOnTop:
-            assert type(value) == int
-            player.deck.append(value)
-          elif effectType == EffectType.ShuffleIntoDeck:
-            assert type(value) == int
-            player.deck.append(value)
-            random.shuffle(player.deck)
-          elif effectType == EffectType.PutOnBottom:
-            assert type(value) == int
-            player.deck.insert(0,value)
-          elif effectType == EffectType.SetAC:
-            assert type(value) == int
-            t.actionCost = value
-          elif effectType == EffectType.SetAP:
-            assert type(value) == int
-            player.actionPoint = value
-          elif effectType == EffectType.SetAPS:
-            assert type(value) == int
-            player.apSlot = value
-          elif effectType == EffectType.SetAtk:
-            assert type(value) == int
-            t.atk = value
-          elif effectType == EffectType.SetDef:
-            assert type(value) == int
-            t.dfns = value
-          t.atk = max(t.atk, 0)
-        except AssertionError:
-          print('err02')
+        # 直接作用于玩家的效果
+        if  effectType == EffectType.AddAP:
+          assert type(value) == int
+          player.actionPoint += value
+        elif  effectType == EffectType.ADDAPS:
+          assert type(value) == int
+          player.apSlot += value
+        elif  effectType == EffectType.AddToHand:
+          assert type(value) == int
+          player.handCards.append(CardToHand(value))
+        elif effectType == EffectType.SetAP:
+          assert type(value) == int
+          player.actionPoint = value
+        elif effectType == EffectType.SetAPS:
+          assert type(value) == int
+          player.apSlot = value
+        elif effectType == EffectType.DrawCard:
+          assert type(value) == int
+          self.DrawCard(player.name,value)
+        elif effectType == EffectType.PutOnTop:
+          assert type(value) == int
+          player.deck.append(value)
+        elif effectType == EffectType.ShuffleIntoDeck:
+          assert type(value) == int
+          player.deck.append(value)
+          random.shuffle(player.deck)
+        elif effectType == EffectType.PutOnBottom:
+          assert type(value) == int
+          player.deck.insert(0,value)
+        # 针对单位的效果
+        else:
+          t = self.GetUnitById(tid)
+          if t is None:
+            raise Exception('err01')
+          try:
+            if effectType == EffectType.AddAC:
+              assert type(value) == int
+              t.actionCost += value
+            elif  effectType == EffectType.AddTag:
+              assert type(value) == Tag
+              t.tags.append(value)
+            elif effectType == EffectType.Buff:
+              print(type(value))
+              assert type(value) == tuple
+              t.atk += value[0]
+              t.dfns += value[1]
+            elif effectType == EffectType.Deploy:
+              assert type(value) == int
+              raise Exception('代码没写')
+            elif effectType == EffectType.Destroy:
+              # assert type(value) == int
+              t.dfns = -1
+            
+            elif effectType == EffectType.TakeDamage:
+              assert type(value) == int
+              dmg = ClacDamage(t.tags,value)
+              t.dfns -= dmg
+            
+            elif effectType == EffectType.SetAC:
+              assert type(value) == int
+              t.actionCost = value
+            
+            elif effectType == EffectType.SetAtk:
+              assert type(value) == int
+              t.atk = value
+            elif effectType == EffectType.SetDef:
+              assert type(value) == int
+              t.dfns = value
+            t.atk = max(t.atk, 0)
+          except AssertionError:
+            print('err02')
       else:
         try:
           if effectType == EffectType.SetDef:
@@ -512,7 +518,7 @@ class Game():
         if e.target.num == 0:
           targets.append(-10086) # 占位符 防止判断目标不合法
         
-        if not e.target.Random:
+        elif not e.target.Random:
           if e.target.num != ALL:  # 非随机目标要么1要么全部
             print('use:',e.target.num,tid)
             if tid is None:
@@ -641,7 +647,10 @@ class Game():
           raise Exception('不能使用滚木指令')
         if entry.handCardIdx is None:
           raise Exception('不能用滚木手牌凭空使用指令')
+        
         card : CommandCard = allCards[entry.actorId] # type: ignore
+        if self.currentBF != card.timeline:
+          raise Exception('禁止出现超时空战士')
         if type(card) != CommandCard:
           raise Exception('单位不能当作指令使用 前端在干嘛')
         if playerStruct.actionPoint < card.cost:
