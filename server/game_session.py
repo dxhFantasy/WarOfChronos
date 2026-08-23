@@ -95,7 +95,7 @@ class GameSession:
                 })
                 return
             entry = LogEntry(
-                self.game.totalTurn,
+                TurnNumber=self.game.totalTurn,
                 actorPlayer=player_side,
                 actionType=ActionType.UseCommand,
                 actorId=state.playerA.handCards[card_index].id if player_side == "A" else state.playerB.handCards[card_index].id,
@@ -110,6 +110,11 @@ class GameSession:
             return
         result = self.game.ProcessRecord(entry)
         if result.state == "ok":
+            if data.get("op_type", None) == "use_card":
+                await self.connections["A" if player_side == "B" else "B"].send({
+                                "type": "enemy_use_card",
+                                "card_id":(state.playerA if player_side == "A" else state.playerB).handCards[card_index].id,
+                })
             await self.broadcast_state()
         else:
             await self.connections[player_side].send({

@@ -634,3 +634,27 @@ h1 {
 #hand-overlay.deploy-mode #use-command-button {
     pointer-events:auto;
 }
+.card-fly {
+    position: fixed;
+    z-index: 5000;
+    pointer-events: none;
+
+    transition:
+        left .8s ease,
+        top .8s ease,
+        transform .8s ease;
+}
+.card-fly.fade-out {
+    opacity: 0;
+
+    transition:
+        opacity .5s ease;
+}
+.card-fly.playing {
+    left:50% !important;
+    top:50% !important;
+    transform:
+        translate(-50%,-50%)
+        scale(1.2);
+    opacity:0;
+}
