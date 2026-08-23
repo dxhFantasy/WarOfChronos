@@ -109,3 +109,43 @@ function renderExpandedHand(cards) {
         container.append(element);
     });
 }
+function play_enemy_use_card(card_id) {
+    let card = $(`
+        <div class="expanded-card card-fly">
+            <div class="card-cost">
+                    ${cardInfo[card_id].cost}
+                </div>
+                <div class="card-name">
+                    ${cardInfo[card_id].name}
+                </div>
+                <div class="card-image">
+                    <img src="assets/cards/${card_id}.jpg">
+                </div>
+                <div class="card-text">
+                    ${cardInfo[card_id].effect}
+                </div>
+            </div>
+        </div>
+    `);
+    $("body").append(card);
+    let start = $("#enemy-hand")[0]
+        .getBoundingClientRect();
+    let target = $("#frontline-units")[0]
+        .getBoundingClientRect();
+    card.css({
+        left:start.left + start.width/2 - 75,
+        top:start.top + start.height/2 - 112
+    });
+    card[0].offsetHeight;
+    card.css({
+        left:target.left + target.width/2 - 75,
+        top:target.top + target.height/2 - 112,
+        transform:"scale(1.15)"
+    });
+    setTimeout(()=>{
+        card.addClass("fade-out");
+    },1600);
+    setTimeout(()=>{
+        card.remove();
+    },2200);
+}

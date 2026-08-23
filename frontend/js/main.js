@@ -228,6 +228,9 @@ socket.onmessage = (event) => {
             cancelDeploy()
         }
     }
+    if (data.type === "enemy_use_card") {
+        play_enemy_use_card(data.card_id)
+    }
 }
 $("#use-command-button").click(() => {
     if (!deployState.active) return;
