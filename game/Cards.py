@@ -7,9 +7,9 @@ B = 1
 C = 2
 
 allCards : list[UnitCard | CommandCard] = [
-UnitCard(6,7,[Tag(Keyword.Guard),Tag(Keyword.Prepared)],7,2,'ZTZ99A主战坦克','N',UnitType.tank,B),
+UnitCard(6,7,[Tag(Keyword.Guard),Tag(Keyword.Prepared)],7,2,'ZTZ99A主战坦克','N',UnitType.tank,B,'守护,预备'),
 UnitCard(4,2,[Tag(Keyword.Blitz)],\
-            3,1,'2S38\"偏流\"','N',UnitType.tank,B),
+            3,1,'2S38\"偏流\"','N',UnitType.tank,B,'闪击'),
 CommandCard(7,[],'破釜沉舟','',effects_=[
   EffectData(
     target=TargetChoose(
@@ -90,7 +90,8 @@ UnitCard(
   name_ = '强-5 强击机',
   owner_='N',
   type_=UnitType.bomber,
-  timeline=B
+  timeline=B,
+  dect_='亡计: 对敌方总部造成 2 点伤害'
 ),
 CommandCard(
   cost_=5,
@@ -125,6 +126,7 @@ UnitCard(
   owner_='N',
   type_=UnitType.tank,
   timeline=B,
+  dect_='闪击'
 ),
 UnitCard(
   attack_=4,
@@ -139,7 +141,8 @@ UnitCard(
   name_='白袍军',
   owner_='N',
   type_=UnitType.infantry,
-  timeline=A
+  timeline=A,
+  dect_='守护'
 ),
 CommandCard(
   cost_=4,
