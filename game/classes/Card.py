@@ -30,9 +30,7 @@ class Tag():
   keyword : Keyword
   value : str | int | None | list[EffectData] = None
 
-@dataclass
-class f(Tag):
-  ...
+
 
 
 class TargetOwner(Enum):
@@ -139,3 +137,25 @@ class CommandCard(Card):
     super().__init__(cost_, tags_, name_, owner_, tl)
     self.effects = effects_
     self.dect = dect_
+
+
+
+
+class PassiveType(Enum):
+  TakeDamage = '受伤'
+  Attack = '造成伤害'
+  N = None
+
+class ClacType(Enum):
+  LLimit = '至少'
+  MLimit = '至多'
+  Add = '+'
+  Sub = '-'
+  Time = '*'
+  N = None
+
+@dataclass
+class PassiveTag(Tag):
+  PT : PassiveType = PassiveType.N
+  CT : ClacType = ClacType.N
+  keyword : Keyword = Keyword.Passive

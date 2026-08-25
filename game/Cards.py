@@ -185,6 +185,23 @@ CommandCard(
   ],
   dect_='抽 3 张牌',
   tl=B
+),UnitCard(
+  attack_=6,
+  defense_=3,
+  tags_=[
+    PassiveTag(
+      PT=PassiveType.TakeDamage,
+      CT=ClacType.MLimit,
+      value=1
+    )
+  ],
+  cost_=5,
+  actionCost_=1,
+  name_='德械师',
+  owner_='N',
+  type_=UnitType.infantry,
+  timeline=B,
+  dect_='本单位受到的伤害至多为 1'
 ),
 ]
 
