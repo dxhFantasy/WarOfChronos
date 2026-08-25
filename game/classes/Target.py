@@ -43,20 +43,38 @@ class UnitCard(Card):
   #   self.defense-=damage
   #   return (self.defense, damage)
 
+def Clac(ct : ClacType,value : int, num : int):
+  if ct == ClacType.Add:
+    return num + value
+  elif ct == ClacType.Sub:
+    return num - value
+  elif ct == ClacType.LLimit:
+    return max(value,num)
+  elif ct == ClacType.MLimit:
+    return min(value,num)
+  elif ct == ClacType.Time:
+    return num * value
+  else:
+    return num
+
 def ClacDamage(tags : list[Tag] ,baseDamage : int) -> int:
   damage : int = baseDamage
   
   for tag in tags:
-    if tag : #处理特殊效果
-      ...
+    if type(tag) == PassiveTag : #处理特殊效果
+      if tag.PT == PassiveType.TakeDamage:
+        assert type(tag.value) == int
+        damage = Clac(tag.CT, tag.value, num=baseDamage)
   
   return damage
   
 def ClacAtk(tags : list[Tag] ,baseAtk : int):
   atk : int = baseAtk
   for tag in tags:
-    if tag : #处理特殊效果
-      ...
+    if type(tag) == PassiveTag : #处理特殊效果
+      if tag.PT == PassiveType.Attack:
+        assert type(tag.value) == int
+        atk = Clac(tag.CT, tag.value, num=baseAtk)
   return atk
   
   
