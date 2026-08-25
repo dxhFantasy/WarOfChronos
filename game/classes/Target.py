@@ -22,7 +22,7 @@ class Target(Card):
 
 
 class UnitCard(Card):
-  def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_ : int, actionCost_ : int, name_ : str, owner_ : str,type_ : UnitType, timeline : Literal[0,1,2], inHand_ : bool = True) -> None:
+  def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_ : int, actionCost_ : int, name_ : str, owner_ : str,type_ : UnitType, timeline : Literal[0,1,2], dect_ : str, inHand_ : bool = True) -> None:
     super().__init__(cost_, tags_, name_, owner_, timeline)
     self.defense = defense_
     self.attack = attack_
@@ -30,6 +30,8 @@ class UnitCard(Card):
     self.actionCost = actionCost_
     self.inHand = inHand_
     self.type = type_
+    self.dect = dect_
+
   
   # def AddAttack(self,n : int):
   #   self.attack += n
