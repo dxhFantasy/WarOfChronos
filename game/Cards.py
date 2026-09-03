@@ -185,7 +185,8 @@ CommandCard(
   ],
   dect_='抽 3 张牌',
   tl=B
-),UnitCard(
+),
+UnitCard(
   attack_=6,
   defense_=3,
   tags_=[
@@ -200,9 +201,58 @@ CommandCard(
   name_='德械师',
   owner_='N',
   type_=UnitType.infantry,
-  timeline=B,
+  timeline=A,
   dect_='本单位受到的伤害至多为 1'
 ),
+UnitCard(
+  attack_=5,
+  defense_=6,
+  tags_=[
+  ],
+  cost_=5,
+  actionCost_=2,
+  name_='T-34 85D/5T',
+  owner_='N',
+  type_=UnitType.tank,
+  timeline=A,
+  dect_=''
+),
+UnitCard(
+  attack_=5,
+  defense_=5,
+  tags_=[
+    Tag(
+      keyword=Keyword.Blitz
+    )
+  ],
+  cost_=5,
+  actionCost_=1,
+  name_='T-72',
+  owner_='N',
+  type_=UnitType.tank,
+  timeline=A,
+  dect_='闪击'
+),
+CommandCard(
+  cost_=6,
+  tags_=[],
+  name_='军备竞赛',
+  owner_='',
+  effects_=[
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random = False,
+      ),
+      effect=EffectType.PutOnTop,
+      value=13
+    )
+  ],
+  dect_='将 2 张"T-72"分别置于友方卡组顶与洗入卡组',
+  tl = B
+),
+
 ]
 
 cardIds = list(range(len(allCards)))
