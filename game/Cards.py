@@ -230,7 +230,7 @@ UnitCard(
   name_='T-72',
   owner_='N',
   type_=UnitType.tank,
-  timeline=A,
+  timeline=B,
   dect_='闪击'
 ),
 CommandCard(
@@ -245,30 +245,108 @@ CommandCard(
         num = 0,
         Random = False,
       ),
+      effect=EffectType.ShuffleIntoDeck,
+      value=13
+    ),
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random = False,
+      ),
       effect=EffectType.PutOnTop,
       value=13
-    )
+    ),
+    
   ],
   dect_='将 2 张"T-72"分别置于友方卡组顶与洗入卡组',
   tl = B
 ),
+CommandCard( # ================15(16-1)====================
+  cost_=1,
+  tags_=[],
+  name_='经济危机',
+  owner_='',
+  effects_=[
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 1,
+        Random=False,
+        condition=ChooseCondition(
+          tid=HQ
+        ),
+      ),
+      effect=EffectType.TakeDamage,
+      value=3
+    ),
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False
+      ),
+      effect=EffectType.DrawCard,
+      value=1
+    )
+  ],
+  dect_='抽 1 张牌, 对友方总部造成 3 点伤害',
+  tl = B
+),
+CommandCard(
+  cost_=5,
+  tags_=[],
+  name_='市场经济',
+  owner_='',
+  effects_=[
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False,
+      ),
+      effect=EffectType.DrawCard,
+      value=3
+    ),
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False
+      ),
+      effect=EffectType.ShuffleIntoDeck,
+      value=15
+    ),
+    EffectData(
+      target=TargetChoose(
+        owner=TargetOwner.Ally,
+        num = 0,
+        Random=False
+      ),
+      effect=EffectType.ShuffleIntoDeck,
+      value=16
+    )
+  ],
+  dect_='抽 3 张牌, 将 1 张"经济危机"和"市场经济"洗入卡组',
+  tl = B
+)
 
 ]
 
-cardIds = list(range(len(allCards)))
-
-cardIds *= 10
-
-def CardToHand(cid : int):
-  return HandCard(cid,allCards[cid].cost,[])
-
-
+cardIds = list(range(len(allCards)+1))
+#cardIds *= 10
 
 @dataclass
 class HandCard():
   id : int
   cost : int
   extraTags : list[Tag]
+
+def CardToHand(cid : int):
+  return HandCard(cid,allCards[cid].cost,[])
+
+
+
 
 def Shuffle():
   random.shuffle(cardIds)

@@ -356,6 +356,9 @@ class Game():
     for tid in targets:
       if tid != HQ:
         # 直接作用于玩家的效果
+        if  effectType == EffectType.ChangeEvent:
+          assert value in [0,1,2,3]
+          self.ChangeEvent(value) # type: ignore
         if  effectType == EffectType.AddAP:
           assert type(value) == int
           player.actionPoint += value

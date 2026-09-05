@@ -79,6 +79,51 @@
         "cost": 5,
         "type": "command",
         "effect": "抽 3 张牌"
+    },
+    {
+        "name": "德械师",
+        "attack": 6,
+        "defense": 3,
+        "cost": 5,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "本单位受到的伤害至多为 1"
+    },
+    {
+        "name": "T-34 85D/5T",
+        "attack": 5,
+        "defense": 6,
+        "cost": 5,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": ""
+    },
+    {
+        "name": "T-72",
+        "attack": 5,
+        "defense": 5,
+        "cost": 5,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "闪击"
+    },
+    {
+        "name": "军备竞赛",
+        "cost": 6,
+        "type": "command",
+        "effect": "将 2 张\"T-72\"分别置于友方卡组顶与洗入卡组"
+    },
+    {
+        "name": "经济危机",
+        "cost": 1,
+        "type": "command",
+        "effect": "抽 1 张牌, 对友方总部造成 3 点伤害"
+    },
+    {
+        "name": "市场经济",
+        "cost": 5,
+        "type": "command",
+        "effect": "抽 3 张牌, 将 1 张\"经济危机\"和\"市场经济\"洗入卡组"
     }
     
 ]
