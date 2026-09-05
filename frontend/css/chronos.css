@@ -658,3 +658,8 @@ h1 {
         scale(1.2);
     opacity:0;
 }
+.battle-unit.selected {
+    border-color: #4da6ff;
+    box-shadow: 0 0 20px #4da6ff;
+    transform: scale(1.05);
+}

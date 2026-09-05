@@ -274,6 +274,49 @@ function renderUnits(units, container){
         container.append(element)
     })
 }
+$(document).on("click", "#player-base-units .battle-unit", function(e) {
+    e.stopPropagation();
+    let unit = $(this);
+    let unitIndex = Number(unit.attr("unit-idx"));
+    console.log("选中单位:", unitIndex);
+    if (deployState.active) {
+        cancelDeploy();
+        cancelMove();
+    }
+    deployState.active = true;
+    deployState.card_index = unitIndex;
+    deployState.card_element = unit;
+    unit.addClass("selected");
+    // 高亮前线
+    $("#frontline-units").addClass("deployable");
+});
+$(document).on("click", "#frontline-units", function() {
+    if (!deployState.active) {
+        return;
+    }
+    console.log(
+        "移动单位:",
+        deployState.card_index
+    );
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "move_unit",
+        unit_index: deployState.card_index,
+        target: "frontline"
+    }));
+});
+function cancelMove() {
+
+    deployState.active = false;
+    deployState.card_index = -1;
+    deployState.card_element = null;
+
+    $(".battle-unit")
+        .removeClass("selected");
+
+    $(".deployable")
+        .removeClass("deployable");
+}
 function renderBattlefield(cur_bf) {
     let frontlines = cur_bf.frontlines
     const containers = [
