@@ -102,6 +102,7 @@ class EffectType(Enum):          #字面意思
   SetAC = '设置行动花费'
   SetAP = '设置行动点'
   SetAPS = '设置行动点槽'
+  ChangeEvent = '更改事件'
 
 
 TURN_START = '回合开始'
