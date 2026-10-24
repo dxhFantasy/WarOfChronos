@@ -7,7 +7,6 @@ class UnitType(Enum):
   tank = '坦克'
   fighter = '战斗机'
   bomber = '轰炸机'
-  starship = '星舰'
   artillery = '火炮'
 
 '''
@@ -20,17 +19,22 @@ class Target(Card):
     self.id : int | None = None
 '''
 
-
+# classes/Target.py
 class UnitCard(Card):
-  def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_ : int, actionCost_ : int, name_ : str, owner_ : str,type_ : UnitType, timeline : Literal[0,1,2], dect_ : str, inHand_ : bool = True) -> None:
-    super().__init__(cost_, tags_, name_, owner_, timeline)
+  def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_: int,
+               actionCost_: int, name_: str, owner_: str, type_: UnitType,
+               timeline: Literal[0, 1, 2], dect_: str,
+               effects_: tuple[Effect, ...] = (), inHand_: bool = True) -> None:
+    super().__init__(cost_, tags_, name_, owner_, timeline, effects_)
     self.defense = defense_
     self.attack = attack_
-    self.id : int | None = None
+    self.id: int | None = None
     self.actionCost = actionCost_
     self.inHand = inHand_
     self.type = type_
     self.dect = dect_
+
+
 
   
   # def AddAttack(self,n : int):
