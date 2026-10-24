@@ -199,6 +199,86 @@
         "cost": 3,
         "type": "command",
         "effect": "对一个敌方单位造成 4 点伤害"
+    },
+    {
+        "name": "志愿军第38军",
+        "attack": 3,
+        "defense": 4,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "别名“万岁军”。\n部署：所有友方步兵获得 +1+1"
+    },
+    {
+        "name": "第101空降师",
+        "attack": 3,
+        "defense": 4,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "闪击。部署：抽 1 张牌"
+    },
+    {
+        "name": "近卫第13步兵师",
+        "attack": 2,
+        "defense": 7,
+        "cost": 5,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "守护。本单位受到的伤害至多为 1"
+    },
+    {
+        "name": "第75游骑兵团",
+        "attack": 3,
+        "defense": 4,
+        "cost": 3,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "Rangers lead the way!\n灵活 1"
+    },
+    {
+        "name": "第22特别空勤团",
+        "attack": 3,
+        "defense": 3,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "Who Dares Wins.\n闪击。部署：使一个随机敌方单位攻击力 -2"
+    },
+    {
+        "name": "雪豹突击队",
+        "attack": 2,
+        "defense": 4,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "守护。部署：所有敌方单位攻击力 -1"
+    },
+    {
+        "name": "第82空降师·外骨骼营",
+        "attack": 5,
+        "defense": 6,
+        "cost": 5,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": "预备。部署：抽 1 张牌"
+    },
+    {
+        "name": "敦刻尔克大撤退",
+        "cost": 2,
+        "type": "command",
+        "effect": "抽 2 张牌；我方总部受到 2 点伤害"
+    },
+    {
+        "name": "沙漠风暴",
+        "cost": 5,
+        "type": "command",
+        "effect": "对所有敌方单位造成 2 点伤害"
+    },
+    {
+        "name": "计划经济",
+        "cost": 4,
+        "type": "command",
+        "effect": "抽 5 张牌，对友方总部造成 5 点伤害"
     }
-    
 ]
