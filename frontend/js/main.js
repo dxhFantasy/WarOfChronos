@@ -279,7 +279,7 @@ function renderUnits(units, container, my_side){
                     ${info.name}
                 </div>
                 <div class="unit-image">
-                    <img src="assets/cards/${unit.cardId}.jpg" onerror="this.src='assets/testcard.jpg'">
+                    <img src="assets/cards/${unit.cardId}.png" onerror="this.onerror=null;this.src='assets/testcard.jpg'">
                 </div>
                 <div class="unit-stats">
                     <span class="attack">
