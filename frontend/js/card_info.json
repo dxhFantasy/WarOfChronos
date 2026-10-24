@@ -48,7 +48,7 @@
         "name": "陈庆之北伐",
         "cost": 5,
         "type": "command",
-        "effect": "使所有敌方单位获得-2-3"
+        "effect": "使所有敌方单位获得 -1-2，将两张\"白袍军\"置于友方卡组顶"
     },
     {
         "name": "BMPT-\"终结者\"",
@@ -115,15 +115,90 @@
     },
     {
         "name": "经济危机",
-        "cost": 1,
+        "cost": 3,
         "type": "command",
-        "effect": "抽 1 张牌, 对友方总部造成 3 点伤害"
+        "effect": "抽 1 张牌，对友方总部造成 3 点伤害，将 1 张\"市场经济\"洗入卡组"
     },
     {
         "name": "市场经济",
-        "cost": 5,
+        "cost": 3,
         "type": "command",
-        "effect": "抽 3 张牌, 将 1 张\"经济危机\"和\"市场经济\"洗入卡组"
+        "effect": "抽 4 张牌, 将 1 张\"经济危机\"洗入卡组"
+    },
+    {
+        "name": "四维碎块",
+        "cost": 2,
+        "type": "command",
+        "effect": "穿梭，抽 1 张牌"
+    },
+    {
+        "name": "增援未来",
+        "cost": 2,
+        "type": "command",
+        "effect": "穿梭，抽 1 张牌"
+    },
+    {
+        "name": "\"星环\"号",
+        "cost": 2,
+        "type": "command",
+        "effect": "穿梭，抽 1 张牌"
+    },
+    {
+        "name": "篡改大航海",
+        "cost": 1,
+        "type": "command",
+        "effect": "切换“大航海”的开启/关闭状态"
+    },
+    {
+        "name": "二次修订凡尔赛",
+        "cost": 1,
+        "type": "command",
+        "effect": "切换“第二次世界大战”的开启/关闭状态"
+    },
+    {
+        "name": "外交调和",
+        "cost": 1,
+        "type": "command",
+        "effect": "切换“美苏冷战”的开启/关闭状态"
+    },
+    {
+        "name": "导火索",
+        "cost": 1,
+        "type": "command",
+        "effect": "切换“第三次世界大战”的开启/关闭状态"
+    },
+    {
+        "name": "线列步兵",
+        "attack": 2,
+        "defense": 2,
+        "cost": 2,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "部署：抽 1 张牌"
+    },
+    {
+        "name": "现代步兵",
+        "attack": 2,
+        "defense": 6,
+        "cost": 3,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": "守护。亡计：抽 1 张牌"
+    },
+    {
+        "name": "天罚2500",
+        "attack": 5,
+        "defense": 5,
+        "cost": 4,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": "本单位受到的伤害至多为 2"
+    },
+    {
+        "name": "精确打击",
+        "cost": 3,
+        "type": "command",
+        "effect": "对一个敌方单位造成 4 点伤害"
     }
     
 ]

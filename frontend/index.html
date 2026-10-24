@@ -25,8 +25,7 @@ rel="stylesheet">
         <hr>
         <h3>创作者:</h3>
         <ul id="author-list" class="author-list"></ul>
-        <br>
-        <button id="about-return"class="wc-button modal-button">▷ 返回首页</button>
+        <button id="about-return" class="wc-button modal-button">▷ 返回首页</button>
     </div>
 </div>
 <div id="room-modal" class="room-modal">
@@ -84,6 +83,25 @@ rel="stylesheet">
         </button>
     </div>
 </div>
+<div id="timeline-modal" class="room-modal">
+    <div class="room-card">
+        <h2>穿梭</h2>
+        <p>选择要前往的时间线</p>
+        <div id="timeline-options"></div>
+        <button id="timeline-cancel-button" class="wc-button modal-button mt-3">
+            ▷ 取消
+        </button>
+    </div>
+</div>
+<div id="game-over-modal" class="room-modal">
+    <div class="room-card">
+        <h2 id="game-over-title">战斗结束</h2>
+        <p id="game-over-result"></p>
+        <button id="game-over-return-button" class="wc-button modal-button mt-3">
+            ▷ 返回首页
+        </button>
+    </div>
+</div>
 <div id="menu" class="container-fluid vh-100 d-flex 
 justify-content-center align-items-center">
 
@@ -92,9 +110,9 @@ justify-content-center align-items-center">
 
 
         <h1 class="title">
-            WAR
-            <span>OF</span>
-            CHRONOS
+            <span>WAR</span>
+            OF
+            <span>CHRONOS</span>
         </h1>
 
 
@@ -128,7 +146,12 @@ justify-content-center align-items-center">
         <div id="enemy-status-bar" class="status-bar">
             <span>敌方</span>
             <span id="enemy-act-point">行动点: 3</span>
+            <span id="enemy-ap-slots" class="ap-slots"></span>
             <span>WarOfChronos 测试版本不代表最终品质</span>
+        </div>
+        <div id="event-panel">
+            <span class="event-panel-title">历史事件</span>
+            <div id="event-list"></div>
         </div>
         <section class="enemy-side">
             <div id="enemy-deck" class="deck">
@@ -160,6 +183,7 @@ justify-content-center align-items-center">
 
         </section>
         <section class="frontline">
+            <div id="frontline-owner" class="frontline-owner">前线：中立</div>
             <div id="frontline-units" class="unit-zone">
                 前线单位
             </div>
@@ -191,11 +215,19 @@ justify-content-center align-items-center">
         <div id="player-status-bar" class="status-bar">
             <span>我方</span>
             <span id="my-act-point">行动点: 3</span>
-            <span>时间线: 现在</span>
+            <span id="my-ap-slots" class="ap-slots"></span>
+            <span id="my-turn-info">第 1 回合 · 我方行动</span>
+            <span id="timeline-name">时间线: 1991-2050</span>
         </div>
         <button id="end-turn-button" class="wc-button modal-button mt-3">
             结束回合
         </button>
+        <div id="unit-actions" class="hidden">
+            <button id="unit-move-button" class="wc-button unit-action-button">移动</button>
+            <button id="unit-attack-button" class="wc-button unit-action-button">攻击</button>
+            <button id="unit-cancel-button" class="wc-button unit-action-button">取消</button>
+        </div>
+        <div id="interaction-hint" class="hidden"></div>
     </div>
     <div id="battle-message" class="hidden">
         <div class="message-container">
@@ -225,6 +257,7 @@ justify-content-center align-items-center">
 <script src="static/js/notice.js"></script>
 <script src="static/js/room-ui.js"></script>
 <script src="static/js/main.js"></script>
+<script src="static/js/battlefield.js"></script>
 
 </body>
 </html>
