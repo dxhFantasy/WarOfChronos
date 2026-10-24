@@ -1,4 +1,5 @@
 
+# from game.classes.CardsPort import KardsPort
 from .Battlefield import *
 from .Player import *
 from .Cards import *
@@ -6,6 +7,16 @@ from .ActionRecord import *
 
 from typing import Any,Literal
 from copy import deepcopy
+from collections.abc import Mapping, Sequence
+
+from .classes.CommandEffect import (
+    CardType, EntityId, EvalContext, EventType, GameEvent, GamePort,
+    Interpreter, PlayerId, StatKind, UnitType as EffectUnitType, Zone,
+    OP_ACTION_COST, OP_ADD_TO_HAND, OP_AP, OP_AP_SLOT, OP_CHANGE_EVENT,
+    OP_SET_ACTION_COST, OP_SET_AP, OP_SET_AP_SLOT, OP_SET_ATTACK,
+    OP_SET_HEALTH, OP_SHUFFLE, OP_TO_BOTTOM, OP_TO_TOP,
+)
+
 
 
 
@@ -29,6 +40,27 @@ DEBUG = 1
 HQ_A = -1
 HQ_B = -2
 
+def UnitRef(uid: int) -> EntityId:
+    return f"unit:{uid}"
+
+def HqRef(player: PlayerId) -> EntityId:
+    return f"hq:{player}"
+
+def IsHqRef(ref: EntityId) -> bool:
+    return ref.startswith("hq:")
+
+def HqOwner(ref: EntityId) -> PlayerId:
+    return ref.split(":", 1)[1]
+
+def ParseUnitId(ref: EntityId) -> int | None:
+    if IsHqRef(ref):
+        return None
+    try:
+        return int(ref.split(":", 1)[1])
+    except (IndexError, ValueError):
+        return None
+
+
 DA = 0
 F = 1
 DB = 2
@@ -50,13 +82,7 @@ class GameState():
   evt : list[bool]
 
 
-@dataclass
-class Clock:
-  player : Player
-  Time : Time
-  targets : list[int]
-  effect : EffectData
-  info : int
+
 
 class Result:
   def __init__(self, state : Literal['ok','err'],msg : str | None = None, gameState : GameState | None = None) -> None:
@@ -66,13 +92,16 @@ class Result:
     else:
       self.msg = msg
 
-class Game():
+from .classes.CommandEffect import Interpreter, GameEvent, EventType
+
+class Game(GamePort):
   def __init__(self) -> None:
+
+    self.choiceQueue: list[int | None] = []
+    self.effectInterp = Interpreter(self)
+
     self.playerA : Player = Player(0,0,[],[],20,'A')
     self.playerB : Player = Player(0,0,[],[],20,'B')
-
-    self.clocks : list[Clock] = []
-
 
     self.playerA.deck = cardIds[0:len(cardIds)//2-1]
     self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)-1]
@@ -100,7 +129,7 @@ class Game():
 
     random.shuffle(self.playerA.deck)
     random.shuffle(self.playerB.deck)
-
+    self.effectInterp = Interpreter(self)
     if __name__ == '__main__':
       self.InitDraw()
 
@@ -206,426 +235,84 @@ class Game():
   def TimeWarp(self,t : Literal[0,1,2]):
     self.currentBF = t
 
-  def Deploy(self,u : Unit,fl : int, player : Literal['A' , 'B']):
-    
-    if not self.events[E2]: #第二次世界大战：关闭
+  def Deploy(self, u : Unit, fl : int, player : Literal['A' , 'B']):
+
+    if not self.events[E2]:  # 第二次世界大战：关闭
       if u.utl == 0:
         u.atk += 2
         u.dfns += 2
       else:
         u.atk -= 1
         u.dfns -= 1
-    
-    if not self.events[E3]: #美苏冷战：关闭
+
+    if not self.events[E3]:  # 美苏冷战：关闭
       if u.utl == 1:
         u.atk -= 1
         u.dfns -= 1
-    
-    if self.events[E4]: #三战：开启
+
+    if self.events[E4]:      # 三战：开启
       if u.utl == 1:
         u.actionCost -= 1
       if u.utl == 2:
         u.atk -= 3
         u.dfns -= 2
-    
+
     u.owner = player
     self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
-    
 
-    if(FindKeyw(u,Keyword.Guard) is not None):
+    # 守护：整条阵线 —— 刻意设计，保留
+    if(FindKeyw(u, Keyword.Guard) is not None):
       for un in self.battlefields[self.currentBF].frontlines[fl].targets:
-        if(FindKeyw(un,Keyword.Guard) is not None):
+        if(FindKeyw(un, Keyword.Guard) is not None):
           un.tags.append(Tag(Keyword.Guarded))
-    
-    if(FindKeyw(u,Keyword.Blitz) is None):
+
+    if(FindKeyw(u, Keyword.Blitz) is None):
       self.attacked.append(u.id)
       self.moved.append(u.id)
 
-    
-    tmp = FindKeyw(u,Keyword.Deploy)
-    if tmp is not None:
-      es = u.tags[tmp].value
-      assert type(es) == list[EffectData]
-      playerStruct = self.GetPlayer(u.owner)
-      assert playerStruct is not None
-      self.ProcessEffect(es,playerStruct)
-    
+    # —— 新：挂载卡牌效果 + 派发部署事件 ——
+    card = allCards[u.cardId]
+    assert isinstance(card, UnitCard)
+    ref = UnitRef(u.id)
+    self.effectInterp.AttachCard(card, u.owner, ref)          # 触发 SELF_DEPLOYED（部署效果）
+    self.effectInterp.HandleEvent(                            # 触发全场监听（UNIT_DEPLOYED）
+        GameEvent(EventType.UNIT_DEPLOYED, actor=u.owner, subject=ref))
 
-  def Attack(self,u : Unit ,tid : int | None):
-
-    if(tid in (HQ_A, HQ_B)): #攻击总部
-      atk = ClacAtk(u.tags,u.atk)
-      if tid == HQ_A:
-        self.playerA.hq -= atk
-      else:
-        self.playerB.hq -= atk
-    else:                             #攻击单位
-      t = self.GetUnitById(tid)
-      if(t is None):
-        raise Exception('你不能攻击滚木')
-      if(FindKeyw(t,Keyword.Guarded)):
-        if(u.uType not in (UnitType.bomber, UnitType.artillery)):
-          raise Exception('此单位被守护')
-      
-      atk = ClacAtk(u.tags,u.atk)
-      dmg = ClacDamage(t.tags,atk)
-      t.dfns -= dmg
-      
-
-      #受到反击伤害
-      if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
-        fAtk = t.atk
-        dmg = ClacDamage(u.tags,fAtk)
-        u.dfns -= dmg
-
-  def Cmp(self,check : Any, cmpT : cmp, n : Any):
-    if cmpT == cmp.Eq:
-      return check == n
-    elif cmpT == cmp.NEq:
-      return check != n
-    elif cmpT == cmp.Gr:
-      return check > n
-    elif cmpT == cmp.NGr:
-      return check <= n
-    elif cmpT == cmp.Le:
-      return check < n
-    elif cmpT == cmp.NLe:
-      return check >= n
-
-  def CheckCondition(self, cdtn : ChooseCondition | None, tid : int, player : Player):
-    if cdtn is None:
-      return True
-    if tid != HQ:
-      t = self.GetUnitById(tid)
-      flag : list[bool] = []
-      if t not in (HQ_A, HQ_B):
-        assert t is not None
-      if cdtn.actCost:
-        if self.Cmp(t.actionCost, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.atk:
-        if self.Cmp(t.atk, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.cost:
-        if self.Cmp(t.cost, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.dfns:
-        if self.Cmp(t.dfns, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.frontline:
-        if self.Cmp(t.fl, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.tag:
-        tagIdx = FindKeyw(t,cdtn.tag.keyword)
-        if tagIdx is not None and t.tags[tagIdx].value == cdtn.value:
-          flag.append(True)
-        else:
-          flag.append(False)
-      if cdtn.timeline:
-        raise Exception('代码没写')
-      if cdtn.tid:
-        if self.Cmp(t.id, cdtn.cmpT, cdtn.value):
-          flag.append(True)
-        else:
-          flag.append(False)
-    else:
-      if cdtn.dfns:
-        return self.Cmp(player.hq,cdtn.cmpT,cdtn.value)
-      else:
-        raise Exception('HYW')
-      # if self.Cmp(t.fl, cdtn.cmpT, cdtn.value):
-      #   flag.append(True)
-      # else:
-      #   flag.append(False)
-    for f in flag:
-      if not f:
-        return False
-    return True
-
-  def ApplyEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
-    for tid in targets:
-      if tid != HQ:
-        # 直接作用于玩家的效果
-        if  effectType == EffectType.ChangeEvent:
-          assert value in [0,1,2,3]
-          self.ChangeEvent(value) # type: ignore
-        if  effectType == EffectType.AddAP:
-          assert type(value) == int
-          player.actionPoint += value
-        elif  effectType == EffectType.ADDAPS:
-          assert type(value) == int
-          player.apSlot += value
-        elif  effectType == EffectType.AddToHand:
-          assert type(value) == int
-          player.handCards.append(CardToHand(value))
-        elif effectType == EffectType.SetAP:
-          assert type(value) == int
-          player.actionPoint = value
-        elif effectType == EffectType.SetAPS:
-          assert type(value) == int
-          player.apSlot = value
-        elif effectType == EffectType.DrawCard:
-          assert type(value) == int
-          self.DrawCard(player.name,value)
-        elif effectType == EffectType.PutOnTop:
-          assert type(value) == int
-          player.deck.append(value)
-        elif effectType == EffectType.ShuffleIntoDeck:
-          assert type(value) == int
-          player.deck.append(value)
-          random.shuffle(player.deck)
-        elif effectType == EffectType.PutOnBottom:
-          assert type(value) == int
-          player.deck.insert(0,value)
-        # 针对单位的效果
-        else:
-          t = self.GetUnitById(tid)
-          if t is None:
-            raise Exception('err01')
-          try:
-            if effectType == EffectType.AddAC:
-              assert type(value) == int
-              t.actionCost += value
-            elif  effectType == EffectType.AddTag:
-              assert type(value) == Tag
-              t.tags.append(value)
-            elif effectType == EffectType.Buff:
-              print(type(value))
-              assert type(value) == tuple
-              t.atk += value[0]
-              t.dfns += value[1]
-            elif effectType == EffectType.Deploy:
-              assert type(value) == int
-              raise Exception('代码没写')
-            elif effectType == EffectType.Destroy:
-              # assert type(value) == int
-              t.dfns = -1
-            
-            elif effectType == EffectType.TakeDamage:
-              assert type(value) == int
-              dmg = ClacDamage(t.tags,value)
-              t.dfns -= dmg
-            
-            elif effectType == EffectType.SetAC:
-              assert type(value) == int
-              t.actionCost = value
-            
-            elif effectType == EffectType.SetAtk:
-              assert type(value) == int
-              t.atk = value
-            elif effectType == EffectType.SetDef:
-              assert type(value) == int
-              t.dfns = value
-            t.atk = max(t.atk, 0)
-          except AssertionError:
-            print('err02')
-      else:
-        try:
-          if effectType == EffectType.SetDef:
-            assert type(value) == int
-            player.hq = value
-          elif effectType == EffectType.TakeDamage:
-            assert type(value) == int
-            player.hq -= value
-          elif effectType == EffectType.Buff:
-            assert type(value) == tuple[int,int]
-            player.hq += value[1]
-          else:
-            raise Exception('你看看指令卡传了个啥进来')
-          
-        except AssertionError:
-          print('err03')
-      
-      
-  def DeleteEffects(self,targets : list[int], effectType : EffectType, value : int | Tag | tuple[int,int], player : Player):
-    for tid in targets:
-      t = self.GetUnitById(tid)
-      if t is None:
-        continue
-      else:
-        assert t is not None
-        if effectType == EffectType.AddAC:
-          assert type(value) == int
-          t.actionCost -= value
-        elif  effectType == EffectType.AddAP:
-          assert type(value) == int
-          player.actionPoint -= value
-        elif  effectType == EffectType.ADDAPS:
-          assert type(value) == int
-          player.apSlot -= value
-        elif  effectType == EffectType.AddToHand:
-          assert type(value) == int
-          # player.handCards.append(CardToHand(value))
-          raise Exception('不存在的需求不予实现')
-        elif  effectType == EffectType.AddTag:
-          assert type(value) == Tag
-          t.tags.pop(t.tags.index(value))
-        elif effectType == EffectType.Buff:
-          assert type(value) == tuple
-          t.atk -= value[0]
-          t.dfns -= value[1]
-        elif effectType == EffectType.Deploy:
-          assert type(value) == int
-          raise Exception('代码没写')
-        elif effectType == EffectType.Destroy:
-          # assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.DrawCard:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.TakeDamage:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.PutOnTop:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.ShuffleIntoDeck:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.PutOnBottom:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.SetAC:
-          t.actionCost = allCards[t.cardId].actionCost # type: ignore
-        elif effectType == EffectType.SetAP:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.SetAPS:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.SetAtk:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        elif effectType == EffectType.SetDef:
-          assert type(value) == int
-          raise Exception('不存在的需求不予实现')
-        t.atk = max(t.atk, 0)
-      
   
-  def ProcessEffect(self, es : list[EffectData], player : Player, tid : int | None = None):
-    for e in es:
-      targets : list[int] = []
-      
-      #判断目标指定合法性/分配指令目标
-      if e.target.condition is None or (e.target.condition and e.target.condition.tid != HQ):
-        if e.target.num == 0:
-          targets.append(-10086) # 占位符 防止判断目标不合法
-        
-        elif not e.target.Random:
-          if e.target.num != ALL:  # 非随机目标要么1要么全部
-            print('use:',e.target.num,tid)
-            if tid is None:
-              raise Exception('目标未指定')
-            #判断单位所有者是否合法
-            f : bool = False
-            if e.target.owner == TargetOwner.Ally:
-              tu = self.GetUnitById(tid)
-              assert tu is not None
-              if player.name == tu.owner:
-                f = True
-            elif e.target.owner == TargetOwner.Enemy:
-              tu = self.GetUnitById(tid)
-              assert tu is not None
-              if player.name != tu.owner:
-                f = True
-            else:
-              f = True
-            #---
-            if f and self.CheckCondition(e.target.condition, tid, player):
-              targets.append(tid)
-          else:
-            for fl in self.battlefields[self.currentBF].frontlines:
-              for u in fl.targets:
-                # print(u.id,' owner ',u.owner)
-                # print('player ',player.name)
-                # print(player.name == u.owner)
-                #判断单位所有者是否合法
-                f : bool = False
-                if e.target.owner == TargetOwner.Ally:
-                  if player.name == u.owner:
-                    f = True
-                elif e.target.owner == TargetOwner.Enemy:
-                  if player.name != u.owner:
-                    f = True
-                else:
-                  f = True
-                #---
 
-                if f and self.CheckCondition(e.target.condition, u.id, player):
-                  targets.append(u.id)
-        else: #随机选择目标
-          temp : list[int] = []
-          for fl in self.battlefields[self.currentBF].frontlines:
-            for u in fl.targets:
+  def Attack(self, u : Unit, tid : int | None):
+    # 攻击方视角的上下文，供 Port 使用
+    ctx = self.effectInterp.MakeContext(u.owner, UnitRef(u.id))
 
-              #判断单位所有者是否合法
-              f : bool = False
-              if e.target.owner == TargetOwner.Ally:
-                if player.name == u.owner:
-                  f = True
-              elif e.target.owner == TargetOwner.Enemy:
-                if player.name != u.owner:
-                  f = True
-              else:
-                f = True
-              #---
+    if tid in (HQ_A, HQ_B):                       # 攻击总部
+      atk = ClacAtk(u.tags, u.atk)
+      target = HqRef('A') if tid == HQ_A else HqRef('B')
+      self.effectInterp.port.DealDamage(UnitRef(u.id), target, atk, ctx)
+      return
 
-              if f and self.CheckCondition(e.target.condition, u.id, player):
-                temp.append(u.id) #候选目标
-          random.shuffle(temp)#随机选择目标
-          targets = temp[0:e.target.num]
-        
-        
-        if len(targets) == 0:
-          raise Exception('目标不合法')
-      else:
-        if (e.target.condition and e.target.condition.tid == HQ):
-          targets.append(HQ)
-        pass
-        print('fxxk you')
-      #====判断结束====
+    t = self.GetUnitById(tid)                     # 攻击单位
+    if t is None:
+      raise Exception('你不能攻击滚木')
+    if FindKeyw(t, Keyword.Guarded):
+      if u.uType not in (UnitType.bomber, UnitType.artillery):
+        raise Exception('此单位被守护')
 
-      print('targets:',targets)
-      flag = False
-      if e.triggerCondition:#判断触发条件
-        for triCdtn in e.triggerCondition:
-          if triCdtn.cdtnType == TriggerConditionType.EventsHappend:
-            assert type(triCdtn.target) == int
-            if self.events[triCdtn.target]:
-              flag = True
-          if triCdtn.cdtnType == TriggerConditionType.HasUnitsOnField:
-            assert type(triCdtn.target) == ChooseCondition
-            for fl in self.battlefields[self.currentBF].frontlines:
-              find = False
-              for u in fl.targets:
-                if self.CheckCondition(triCdtn.target, u.id, player):
-                  find = True
-                  break
-              if find:
-                break
-      else:
-        flag = True
-      #====判断结束====
+    atk = ClacAtk(u.tags, u.atk)
+    self.effectInterp.port.DealDamage(UnitRef(u.id), UnitRef(t.id), atk, ctx)
 
-      if flag:#处理指令效果
-        print('Processing Command Effects')
-        self.ApplyEffects(targets,e.effect,e.value, player)
-        if e.endTime is not None:
-          self.clocks.append(Clock(player,e.endTime,targets,e,e.endTime.info))
+    # 受到反击伤害
+    if t.uType != UnitType.bomber and u.uType not in (UnitType.bomber, UnitType.artillery):
+      fAtk = t.atk
+      self.effectInterp.port.DealDamage(UnitRef(t.id), UnitRef(u.id), fAtk, ctx)
 
-  def UseCommand(self,player : Player, command : CommandCard, tid : int | None):
-    es = command.effects
-    self.ProcessEffect(es, player, tid)
+
+
+  def UseCommand(self, player : Player, command : CommandCard, tid : int | None):
+    self.choiceQueue.clear()
+    if tid is not None:
+      self.choiceQueue.append(tid)
+    self.effectInterp.AttachCard(command, player.name, None)
+
 
 
 
@@ -765,13 +452,10 @@ class Game():
         f = False
         for u in fl.targets:
           if(u.dfns <= 0):
-            tmp = FindKeyw(u,Keyword.Deathrattle)
-            if tmp is not None:
-              es = u.tags[tmp].value
-              assert type(es) == list[EffectData]
-              player = self.GetPlayer(u.owner)
-              assert player is not None
-              self.ProcessEffect(es,player)
+            ref = UnitRef(u.id)
+            self.effectInterp.HandleEvent(
+              GameEvent(EventType.UNIT_DESTROYED, actor=u.owner, subject=ref))
+            self.effectInterp.DetachHost(ref)
             fl.targets.pop(fl.targets.index(u))
             bf.unitsNum -= 1
             continue
@@ -781,6 +465,7 @@ class Game():
           for u in fl.targets:
             if FindKeyw(u,Keyword.Guarded):
               u.tags.pop(u.tags.index(Tag(Keyword.Guarded)))
+
 
   def GetState(self):
     self.Check()
@@ -795,16 +480,19 @@ class Game():
 
 
   def TurnStart(self, lastTurnPlayer : str) -> None:
-    for c in self.clocks:
-      if c.Time.turnTime == TURN_START:
-        if c.Time.turnCount == 0:
-          if c.info == START:
-            self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
-          elif c.info == END:
-            self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
-          self.clocks.pop(self.clocks.index(c))
-        else:
-          c.Time.turnCount -= 1
+    nextPlayer = 'B' if lastTurnPlayer == 'A' else 'A'
+    self.effectInterp.HandleEvent(
+    GameEvent(EventType.TURN_STARTED, actor=nextPlayer))
+    # for c in self.clocks:
+    #   if c.Time.turnTime == TURN_START:
+    #     if c.Time.turnCount == 0:
+    #       if c.info == START:
+    #         self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+    #       elif c.info == END:
+    #         self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
+    #       self.clocks.pop(self.clocks.index(c))
+    #     else:
+    #       c.Time.turnCount -= 1
 
     if(lastTurnPlayer == 'A'):
       self.DrawCard('B',1)
@@ -830,20 +518,258 @@ class Game():
     
 
 
-  def TurnEnd(self,player : str) -> None:
-    ...
-    for c in self.clocks:
-      if c.Time.turnTime == TURN_END:
-        if c.Time.turnCount == 0:
-          if c.info == START:
-            self.ApplyEffects(c.targets,c.effect.effect,c.effect.value,c.player)
-          elif c.info == END:
-            self.DeleteEffects(c.targets,c.effect.effect,c.effect.value,c.player)
-          self.clocks.pop(self.clocks.index(c))
-        else:
-          c.Time.turnCount -= 1
-    self.TurnStart(player)
-    ...
+  def TurnEnd(self, player : str) -> None:
+      self.effectInterp.HandleEvent(
+        GameEvent(EventType.TURN_ENDED, actor=player))
+      self.TurnStart(player)
+  
+
+    # ==========================================================
+  # GamePort 实现
+  # ==========================================================
+
+  # ---------------- 查询 ----------------
+
+  def GetHQ(self, player: PlayerId) -> EntityId:
+    return HqRef(player)
+
+  def ListEntities(self, player: PlayerId, zone: Zone) -> Sequence[EntityId]:
+    if zone is Zone.BOARD:
+      bf = self.battlefields[self.currentBF]
+      return [UnitRef(u.id) for fl in bf.frontlines
+              for u in fl.targets if u.owner == player]
+    return []
+
+
+  def GetStat(self, entity: EntityId, stat: StatKind) -> int:
+    if IsHqRef(entity):
+      player = self.GetPlayer(HqOwner(entity))
+      if player is None:
+        return 0
+      return player.hq if stat is StatKind.HEALTH else 0
+
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return 0
+    if stat is StatKind.ATTACK:
+      return u.atk
+    if stat is StatKind.HEALTH:
+      return u.dfns
+    if stat is StatKind.COST:
+      return u.cost
+    if stat is StatKind.ACTION_COST:
+      return u.actionCost
+    if stat is StatKind.FRONTLINE:
+      return u.fl
+    if stat is StatKind.TIMELINE:
+      return u.utl
+    return 0
+
+  def GetKeywords(self, entity: EntityId) -> frozenset[str]:
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return frozenset()
+    return frozenset(t.keyword.value for t in u.tags)
+
+  def GetCardType(self, entity: EntityId) -> CardType:
+    return CardType.HQ if IsHqRef(entity) else CardType.UNIT
+
+  def GetUnitType(self, entity: EntityId) -> EffectUnitType:
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return EffectUnitType.NONE
+    try:
+      return EffectUnitType(u.uType.value)
+    except ValueError:
+      return EffectUnitType.NONE
+
+  def IsAlive(self, entity: EntityId) -> bool:
+    if IsHqRef(entity):
+      return True
+    u = self.GetUnitById(ParseUnitId(entity))
+    return u is not None and u.dfns > 0
+
+  def OpponentOf(self, player: PlayerId) -> PlayerId:
+    return 'B' if player == 'A' else 'A'
+
+  def Choose(self, candidates: Sequence[EntityId],
+             ctx: EvalContext) -> EntityId | None:
+    while self.choiceQueue:
+      tid = self.choiceQueue.pop(0)
+      if tid is None:
+        continue
+      ref = HqRef('A') if tid == HQ_A else (
+        HqRef('B') if tid == HQ_B else UnitRef(tid))
+      if ref in candidates:
+        return ref
+    return candidates[0] if candidates else None
+
+  # ---------------- 操作 ----------------
+
+  def DealDamage(self, source: EntityId | None, target: EntityId,
+                 amount: int, ctx: EvalContext) -> None:
+    if IsHqRef(target):
+      player = self.GetPlayer(HqOwner(target))
+      if player is None:
+        return
+      player.hq -= amount
+      self.effectInterp.HandleEvent(
+        GameEvent(EventType.HQ_DAMAGED, subject=target, data={'数值': amount}))
+      return
+
+    u = self.GetUnitById(ParseUnitId(target))
+    if u is None or u.dfns <= 0:
+      return
+    dmg = ClacDamage(u.tags, amount)          # 被动减伤在这里生效
+    u.dfns -= dmg
+    self.effectInterp.HandleEvent(
+      GameEvent(EventType.UNIT_DAMAGED, actor=u.owner,
+                subject=target, data={'数值': dmg}))
+
+  def Heal(self, target: EntityId, amount: int, ctx: EvalContext) -> None:
+    if IsHqRef(target):
+      player = self.GetPlayer(HqOwner(target))
+      if player is not None:
+        player.hq += amount
+      return
+
+    u = self.GetUnitById(ParseUnitId(target))
+    if u is None:
+      return
+    u.dfns += amount
+    self.effectInterp.HandleEvent(
+      GameEvent(EventType.UNIT_HEALED, actor=u.owner,
+                subject=target, data={'数值': amount}))
+
+  def Destroy(self, target: EntityId, ctx: EvalContext) -> None:
+    u = self.GetUnitById(ParseUnitId(target))
+    if u is None:
+      return
+    u.dfns = -1
+    self.Check()                              # 统一走 Check，亡计/守护刷新都在那里
+
+  def DrawCards(self, player: PlayerId, amount: int, ctx: EvalContext) -> None:
+    self.DrawCard(player, amount)
+    self.effectInterp.HandleEvent(
+      GameEvent(EventType.CARD_DRAWN, actor=player, data={'数值': amount}))
+
+  def Discard(self, entity: EntityId, ctx: EvalContext) -> None:
+    return                                    # 手牌不是实体，暂不实现
+
+  def ModifyStats(self, entity: EntityId, attack: int, health: int,
+                   ctx: EvalContext) -> None:
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return
+    u.atk = max(0, u.atk + attack)
+    u.dfns += health
+
+  def GrantKeyword(self, entity: EntityId, keyword: str,
+                   ctx: EvalContext) -> None:
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return
+    try:
+      kw = Keyword(keyword)
+    except ValueError:
+      return
+    idx = FindKeyw(u, kw)
+    if idx is None:
+      u.tags.append(Tag(kw))
+      self.effectInterp.HandleEvent(
+        GameEvent(EventType.KEYWORD_GAINED, actor=u.owner,
+                  subject=entity, data={'数值': 1}))
+
+  def RevokeKeyword(self, entity: EntityId, keyword: str,
+                    ctx: EvalContext) -> None:
+    u = self.GetUnitById(ParseUnitId(entity))
+    if u is None:
+      return
+    try:
+      kw = Keyword(keyword)
+    except ValueError:
+      return
+    idx = FindKeyw(u, kw)
+    if idx is not None:
+      u.tags.pop(idx)
+
+  def Summon(self, player: PlayerId, cardId: str, ctx: EvalContext) -> None:
+    try:
+      card = allCards[int(cardId)]
+    except (ValueError, IndexError):
+      return
+    if not isinstance(card, UnitCard):
+      return
+    u = CardToUnit(card)
+    u.id = self.lastId + 1
+    self.lastId += 1
+    u.owner = player
+    u.fl = F
+    self.Deploy(u, F, player)                 # type: ignore[arg-type]
+
+  def AddKredits(self, player: PlayerId, amount: int, ctx: EvalContext) -> None:
+    p = self.GetPlayer(player)
+    if p is not None:
+      p.actionPoint += amount
+    self.effectInterp.HandleEvent(
+      GameEvent(EventType.KREDIT_GAINED, actor=player, data={'数值': amount}))
+
+  def CustomAction(self, op: str, args: Mapping[str, int | str],
+                   ctx: EvalContext, target: EntityId | None) -> None:
+    value = int(args.get('值', 0))
+    owner = self.GetPlayer(ctx.owner)
+
+    # ---- 不指向具体单位：作用于效果拥有者 ----
+    if target is None:
+      if owner is None:
+        return
+      if op == OP_AP:
+        owner.actionPoint += value
+      elif op == OP_AP_SLOT:
+        owner.apSlot += value
+      elif op == OP_SET_AP:
+        owner.actionPoint = value
+      elif op == OP_SET_AP_SLOT:
+        owner.apSlot = value
+      elif op == OP_ADD_TO_HAND:
+        owner.handCards.append(CardToHand(value))
+      elif op == OP_TO_TOP:
+        owner.deck.append(value)
+      elif op == OP_TO_BOTTOM:
+        owner.deck.insert(0, value)
+      elif op == OP_SHUFFLE:
+        owner.deck.append(value)
+        random.shuffle(owner.deck)
+      elif op == OP_CHANGE_EVENT:
+        self.ChangeEvent(value)               # type: ignore[arg-type]
+      return
+
+    # ---- 指向总部 ----
+    if IsHqRef(target):
+      player = self.GetPlayer(HqOwner(target))
+      if player is None:
+        return
+      if op == OP_SET_HEALTH:
+        player.hq = value
+      elif op == OP_AP:
+        player.actionPoint += value
+      elif op == OP_AP_SLOT:
+        player.apSlot += value
+      return
+
+    # ---- 指向单位 ----
+    u = self.GetUnitById(ParseUnitId(target))
+    if u is None:
+      return
+    if op == OP_ACTION_COST:
+      u.actionCost += value
+    elif op == OP_SET_ACTION_COST:
+      u.actionCost = value
+    elif op == OP_SET_ATTACK:
+      u.atk = max(0, value)
+    elif op == OP_SET_HEALTH:
+      u.dfns = value
+
 
 
 
