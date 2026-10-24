@@ -1,37 +1,37 @@
 '''
 房间的管理模块
 '''
+from __future__ import annotations
 import random
-import string
 import asyncio
 from .game_session import GameSession
 from fastapi import WebSocket
-from typing import Literal
+from typing import Any, Literal
 
-rooms = {}
+rooms: dict[str, Room] = {}
 class Player:
     """
     将 websocket 封装为 Player 对象，便于管理玩家状态和发送消息
     """
-    def __init__(self, websocket):
+    def __init__(self, websocket: WebSocket) -> None:
         self.websocket: WebSocket = websocket
-        self.ready = False
+        self.ready: bool = False
         self.room: Room | None = None
         self.side: Literal["A", "B"] | None = None  # 玩家在房间中的位置，"A" 或 "B"
-    async def send(self, data):
+    async def send(self, data: dict[str, Any]) -> None:
         await self.websocket.send_json(data)
 class Room:
     '''
     房间类，管理房间内的玩家和游戏状态
     '''
-    def __init__(self, room_id):
-        self.room_id = room_id
+    def __init__(self, room_id: str) -> None:
+        self.room_id: str = room_id
         self.players: list[Player] = []
-        self.state = "WAITING"
-        self.countdown_task = None
+        self.state: str = "WAITING"
+        self.countdown_task: asyncio.Task[None] | None = None
         self.game_session: GameSession | None = None
 
-    async def add_player(self, player: Player):
+    async def add_player(self, player: Player) -> None:
         self.players.append(player)
         player.room = self
         if len(self.players) == 1:
@@ -49,20 +49,20 @@ class Room:
             self.countdown_task = asyncio.create_task(
                 self.start_countdown()
             )
-    def is_full(self):
+    def is_full(self) -> bool:
         return len(self.players) >= 2
 
-    def all_ready(self):
+    def all_ready(self) -> bool:
         return all(player.ready for player in self.players)
 
-    async def broadcast(self, data: dict):
+    async def broadcast(self, data: dict[str, Any]) -> None:
         for player in self.players:
             try:
                 await player.send(data)
             except Exception as e:
                 print(f"Error sending message to player: {e}")
 
-    async def check_ready(self):
+    async def check_ready(self) -> None:
         if not self.is_full():
             self.state = "READY_CHECK"
 
@@ -72,7 +72,7 @@ class Room:
             "type": "ready_check",
             "countdown": 10,
         })
-    async def player_ready(self,player):
+    async def player_ready(self, player: Player) -> None:
 
         player.ready=True
 
@@ -88,7 +88,7 @@ class Room:
 
             await self.start_game()
 
-    async def start_game(self):
+    async def start_game(self) -> None:
         if self.state == "IN_PROGRESS":
             return
         self.state = "IN_PROGRESS"
@@ -104,7 +104,7 @@ class Room:
         })
         await self.game_session.start_game()
 
-    async def start_countdown(self):
+    async def start_countdown(self) -> None:
         try:
             countdown = 10
             while countdown > 0:
