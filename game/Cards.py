@@ -4,7 +4,7 @@ from .classes.Card import PassiveTag, PassiveType, ClacType, Tag, Keyword
 from .classes.CommandEffect import (
     Buff, CustomAction, DealDamage, DrawCards, Effect, EndPoint, EventType,
     ForEach, Lifespan, PlayEffect, Selection, Side, StartPoint, Trigger,
-    Pick, Zone,
+    Pick, Zone, UnitType as EffectUnitType,
 )
 # 下划线别名：不会被 `from .Cards import *` 转发，避免 Final 重分配报错
 from .classes.CommandEffect import (
@@ -137,7 +137,7 @@ allCards: list[UnitCard | CommandCard] = [
 
   # ================= 13 =================
   UnitCard(5, 5, [Tag(Keyword.Blitz)], 5, 1,
-          'T-72', 'N', UnitType.tank, B, '闪击'),
+          'T-72', 'N', UnitType.tank, [A, B], '闪击'),
 
   # ================= 14 指令 =================
   CommandCard(6, [], '军备竞赛', '', effects_=(
@@ -145,8 +145,8 @@ allCards: list[UnitCard | CommandCard] = [
       trigger=Trigger(EventType.SELF_DEPLOYED),
       lifespan=Lifespan.Once(),
       actions=(
-        CustomAction(_OP_TO_TOP, None, {'值': 13}),
         CustomAction(_OP_SHUFFLE, None, {'值': 13}),
+        CustomAction(_OP_TO_TOP, None, {'值': 13}),
       ),
     ),
   ), dect_='将 2 张"T-72"分别置于友方卡组顶与洗入卡组', tl=B),
@@ -284,6 +284,119 @@ allCards: list[UnitCard | CommandCard] = [
       ),
     ),
   ), dect_='对一个敌方单位造成 4 点伤害', tl=B),
+
+  # ================= 28 A：志愿军第38军 =================
+  UnitCard(5, 4, [], 4, 1, '志愿军第38军"万岁军"', 'N', UnitType.infantry, A,
+          '部署：所有友方步兵获得 +1+1',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(
+                Buff(Selection.Units(Side.FRIENDLY,
+                                    EffectUnitType.INFANTRY), 1, 1),
+              ),
+            ),
+          )),
+
+  # ================= 29 A：第101空降师 =================
+  UnitCard(4, 4, [Tag(Keyword.Blitz)], 4, 1, '第101空降师', 'N',
+          UnitType.infantry, A,
+          '闪击。部署：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 30 A：近卫第13步兵师 =================
+  UnitCard(2, 7,
+          [Tag(Keyword.Guard),
+          PassiveTag(PT=PassiveType.TakeDamage, CT=ClacType.MLimit, value=1)],
+          5, 1, '近卫第13步兵师', 'N', UnitType.infantry, A,
+          '守护。本单位受到的伤害至多为 1'),
+
+  # ================= 31 B：第75游骑兵团 =================
+  UnitCard(3, 4, [Tag(Keyword.Agile, 1)], 3, 1, '第75游骑兵团', 'N',
+          UnitType.infantry, B, 'Rangers lead the way! \n灵活 1'),
+
+  # ================= 32 B：第22特别空勤团 =================
+  UnitCard(3, 3, [Tag(Keyword.Blitz)], 3, 1, '第22特别空勤团', 'N',
+          UnitType.infantry, B,
+          'Who Dares Wins.\n闪击。部署：使一个随机敌方单位获得 -2 攻击力',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(
+                Buff(Selection(owner=Side.ENEMY, zone=Zone.BOARD,
+                              pick=Pick.RANDOM, count=1),
+                    -2, 0),
+              ),
+            ),
+          )),
+
+  # ================= 33 B：雪豹突击队 =================
+  UnitCard(2, 4, [Tag(Keyword.Guard)], 4, 1, '雪豹突击队', 'N',
+          UnitType.infantry, B,
+          '守护。部署：所有敌方单位攻击力 -1',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(Buff(Selection.Units(Side.ENEMY), -1, 0),),
+            ),
+          )),
+
+  # ================= 34 C：第82空降师·外骨骼营 =================
+  UnitCard(5, 6, [Tag(Keyword.Prepared)], 5, 2, '第82空降师·外骨骼营',
+          'N', UnitType.infantry, C,
+          '预备。部署：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 35 A：敦刻尔克大撤退 =================
+  CommandCard(2, [], '敦刻尔克大撤退', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DrawCards(Side.FRIENDLY, 2),
+        DealDamage(Selection.HQ(Side.FRIENDLY), 2),
+      ),
+    ),
+  ), dect_='抽 2 张牌。友方总部受到 2 点伤害', tl=A),
+
+  # ================= 36 B：沙漠风暴 =================
+  CommandCard(5, [], '沙漠风暴', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DealDamage(Selection.Units(Side.ENEMY), 2),
+      ),
+    ),
+  ), dect_='对所有敌方单位造成 2 点伤害', tl=B),
+
+  # ================= 37 指令 =================
+  CommandCard(4, [], '计划经济', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DrawCards(Side.FRIENDLY, 5),
+        DealDamage(Selection.HQ(Side.FRIENDLY), 5),
+        # CustomAction(_OP_SHUFFLE, None, {'值': 16}),
+      ),
+    ),
+  ), dect_='抽 5 张牌，对友方总部造成 5 点伤害', tl=B),
 ]
 
 # 原来 +1 会让最后一张牌索引越界，去掉
@@ -294,7 +407,8 @@ def RemoveCard(cardIdx : int):
 RemoveCard(15)# 经济危机为衍生牌
 # RemoveCard(1)
 
-cardIds *= 5
+cardIds *= 3
+random.shuffle(cardIds)
 
 @dataclass
 class HandCard():

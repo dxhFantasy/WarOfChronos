@@ -150,6 +150,8 @@ class Game(GamePort):
 
     self.moved : list[int] = []
     self.attacked : list[int] = []
+    self.attackedByAction : list[int] = []
+    self.deployedThisTurn : list[int] = []
 
 
 
@@ -287,7 +289,9 @@ class Game(GamePort):
     '''返回本单位本回合可以移动到的阵线下标'''
     if u is None or u.owner != player or not self.IsTurn(player):
       return []
-    if u.id in self.attacked and u.uType != UnitType.tank:
+    if u.id in self.attackedByAction and u.uType != UnitType.tank:
+      return []
+    if u.id in self.deployedThisTurn:
       return []
     agile = GetAgileCount(u)
     moveLimit = agile if agile > 0 else 1
@@ -369,6 +373,7 @@ class Game(GamePort):
     if p is not None:
       p.actionPoint -= u.actionCost
     self.attacked.append(u.id)
+    self.attackedByAction.append(u.id)
     if u.uType != UnitType.tank:
       self.moved.append(u.id)
     self.Attack(u,target)
@@ -511,6 +516,7 @@ class Game(GamePort):
     if(FindKeyw(u, Keyword.Blitz) is None):
       self.attacked.append(u.id)
       self.moved.append(u.id)
+      self.deployedThisTurn.append(u.id)
 
     # —— 新：挂载卡牌效果 + 派发部署事件 ——
     card = allCards[u.cardId]
@@ -627,7 +633,7 @@ class Game(GamePort):
 
         if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
           raise Exception('单位不能放对面家里')
-        elif (entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared)) or \
+        elif (entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) is not None) or \
               ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
           if len(self.battlefields[self.currentBF].frontlines[entry.target].targets)\
               >= self.battlefields[self.currentBF].frontlines[entry.target].maxTargets:
@@ -658,7 +664,9 @@ class Game(GamePort):
           raise Exception('不能移动敌方单位')
         if entry.target is None:
           raise Exception('未选择移动位置')
-        if u.id in self.attacked and u.uType != UnitType.tank:
+        if u.id in self.attackedByAction and u.uType != UnitType.tank:
+          raise Exception('本单位本回合不能移动')
+        if u.id in self.deployedThisTurn:
           raise Exception('本单位本回合不能移动')
         agile = GetAgileCount(u)
         moveLimit = agile if agile > 0 else 1
@@ -767,6 +775,8 @@ class Game(GamePort):
     nextPlayer = 'B' if lastTurnPlayer == 'A' else 'A'
     self.moved.clear()
     self.attacked.clear()
+    self.attackedByAction.clear()
+    self.deployedThisTurn.clear()
     self.effectInterp.HandleEvent(
     GameEvent(EventType.TURN_STARTED, actor=nextPlayer))
     # for c in self.clocks:

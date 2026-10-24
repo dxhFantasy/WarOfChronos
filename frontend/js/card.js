@@ -87,7 +87,7 @@ function renderExpandedHand(cards) {
                     ${(cardState.tags || []).map((tag) => `<span class="card-tag">${tag}</span>`).join("")}
                 </div>
                 <div class="card-image">
-                    <img src="assets/cards/${cardState.id}.jpg" onerror="this.src='assets/testcard.jpg'">
+                    <img src="assets/cards/${cardState.id}.png" onerror="this.onerror=null;this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-stats">
                     <span class="attack">
@@ -118,7 +118,7 @@ function renderExpandedHand(cards) {
                     ${(cardState.tags || []).map((tag) => `<span class="card-tag">${tag}</span>`).join("")}
                 </div>
                 <div class="card-image">
-                    <img src="assets/cards/${cardState.id}.jpg" onerror="this.src='assets/testcard.jpg'">
+                    <img src="assets/cards/${cardState.id}.png" onerror="this.onerror=null;this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-text">
                     ${info.effect}
@@ -141,7 +141,7 @@ function play_enemy_use_card(card_id) {
                     ${info.name}
                 </div>
                 <div class="card-image">
-                    <img src="assets/cards/${card_id}.jpg" onerror="this.src='assets/testcard.jpg'">
+                    <img src="assets/cards/${card_id}.png" onerror="this.onerror=null;this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-text">
                     ${info.effect}
