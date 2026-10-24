@@ -1,4 +1,13 @@
 let cardInfo = [];
+const CARD_TIMELINE_LABELS = ["A", "B", "C"];
+const CARD_TIMELINE_NAMES = ["1990前", "1991-2050", "2050后"];
+function renderCardTimelines(timelines) {
+    return (timelines || []).map((timeline) => {
+        let label = CARD_TIMELINE_LABELS[timeline] || "?";
+        let name = CARD_TIMELINE_NAMES[timeline] || "未知时间线";
+        return `<span class="card-timeline timeline-${timeline}" title="${name}">${label}</span>`;
+    }).join("");
+}
 async function loadCardInfo(){
     const response = await fetch(
         "static/js/card_info.json"
@@ -71,8 +80,14 @@ function renderExpandedHand(cards) {
                 <div class="card-name">
                     ${info.name}
                 </div>
+                <div class="card-timelines" title="所属时间线">
+                    ${renderCardTimelines(cardState.timelines)}
+                </div>
+                <div class="card-tags">
+                    ${(cardState.tags || []).map((tag) => `<span class="card-tag">${tag}</span>`).join("")}
+                </div>
                 <div class="card-image">
-                    <img src="assets/cards/${cardState.id}.jpg">
+                    <img src="assets/cards/${cardState.id}.jpg" onerror="this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-stats">
                     <span class="attack">
@@ -96,8 +111,14 @@ function renderExpandedHand(cards) {
                 <div class="card-name">
                     ${info.name}
                 </div>
+                <div class="card-timelines" title="所属时间线">
+                    ${renderCardTimelines(cardState.timelines)}
+                </div>
+                <div class="card-tags">
+                    ${(cardState.tags || []).map((tag) => `<span class="card-tag">${tag}</span>`).join("")}
+                </div>
                 <div class="card-image">
-                    <img src="assets/cards/${cardState.id}.jpg">
+                    <img src="assets/cards/${cardState.id}.jpg" onerror="this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-text">
                     ${info.effect}
@@ -110,19 +131,20 @@ function renderExpandedHand(cards) {
     });
 }
 function play_enemy_use_card(card_id) {
+    let info = cardInfo[card_id] || { name: "未知指令", cost: 0, effect: "" };
     let card = $(`
         <div class="expanded-card card-fly">
             <div class="card-cost">
-                    ${cardInfo[card_id].cost}
+                    ${info.cost}
                 </div>
                 <div class="card-name">
-                    ${cardInfo[card_id].name}
+                    ${info.name}
                 </div>
                 <div class="card-image">
-                    <img src="assets/cards/${card_id}.jpg">
+                    <img src="assets/cards/${card_id}.jpg" onerror="this.src='assets/testcard.jpg'">
                 </div>
                 <div class="card-text">
-                    ${cardInfo[card_id].effect}
+                    ${info.effect}
                 </div>
             </div>
         </div>
