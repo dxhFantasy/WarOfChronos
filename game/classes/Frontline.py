@@ -26,5 +26,6 @@ class Frontline():
   
 
 
-def CardToUnit(card : UnitCard):
-  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,card.tags,card.type,card.timeline,'',-1)
+def CardToUnit(card : UnitCard, timeline : Timeline | None = None) -> Unit:
+  utl = timeline if timeline is not None else card.timelines[0]
+  return Unit(-1,allCards.index(card),card.attack,card.defense,card.cost,card.actionCost,list(card.tags),card.type,utl,'',-1)

@@ -1,6 +1,5 @@
 from ..classes.Card import *
 from enum import Enum
-from typing import Literal
 
 class UnitType(Enum):
   infantry = '步兵'
@@ -23,7 +22,7 @@ class Target(Card):
 class UnitCard(Card):
   def __init__(self, attack_: int, defense_: int, tags_: list[Tag], cost_: int,
                actionCost_: int, name_: str, owner_: str, type_: UnitType,
-               timeline: Literal[0, 1, 2], dect_: str,
+               timeline: Timeline | list[Timeline], dect_: str,
                effects_: tuple[Effect, ...] = (), inHand_: bool = True) -> None:
     super().__init__(cost_, tags_, name_, owner_, timeline, effects_)
     self.defense = defense_

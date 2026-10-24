@@ -91,10 +91,6 @@
     效果伤害    CardsPort     UNIT_DAMAGED / HQ_DAMAGED
     效果抽牌    CardsPort     CARD_DRAWN
 
-还没接的（写了对应效果再补）：
-    Attack() 里没有派发 UNIT_ATTACKED；
-    攻击仍是直接 t.dfns -= dmg，不经过 Port，所以不会触发“受伤时”。
-
 ========================= 六、两种被动 =========================
 
 数值型（改伤害/攻击力）→ 继续用 PassiveTag + ClacDamage/ClacAtk

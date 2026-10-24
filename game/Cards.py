@@ -4,11 +4,13 @@ from .classes.Card import PassiveTag, PassiveType, ClacType, Tag, Keyword
 from .classes.CommandEffect import (
     Buff, CustomAction, DealDamage, DrawCards, Effect, EndPoint, EventType,
     ForEach, Lifespan, PlayEffect, Selection, Side, StartPoint, Trigger,
+    Pick, Zone,
 )
 # 下划线别名：不会被 `from .Cards import *` 转发，避免 Final 重分配报错
 from .classes.CommandEffect import (
     OP_ACTION_COST as _OP_ACTION_COST,
     OP_AP_SLOT as _OP_AP_SLOT,
+    OP_CHANGE_EVENT as _OP_CHANGE_EVENT,
     OP_SET_ATTACK as _OP_SET_ATTACK,
     OP_SHUFFLE as _OP_SHUFFLE,
     OP_TO_TOP as _OP_TO_TOP,
@@ -93,17 +95,17 @@ allCards: list[UnitCard | CommandCard] = [
     Effect(
       trigger=Trigger(EventType.SELF_DEPLOYED),
       lifespan=Lifespan.Once(),
-      actions=(Buff(Selection.Units(Side.ENEMY), -2, -3),),
-    ),
-  ), dect_='使所有敌方单位获得 -2-3', tl=A),
+      actions=(Buff(Selection.Units(Side.ENEMY), -1, -2),
+              CustomAction(_OP_TO_TOP, None, {'值': 8}),),
+  ),), dect_='使所有敌方单位获得 -1-2，将两张"白袍军"置于友方卡组顶', tl=A),
 
   # ================= 7 =================
   UnitCard(7, 5, [Tag(Keyword.Blitz)], 7, 1,
           'BMPT-"终结者"', 'N', UnitType.tank, B, '闪击'),
 
   # ================= 8 =================
-  UnitCard(4, 5, [Tag(Keyword.Guard)], 4, 0,
-          '白袍军', 'N', UnitType.infantry, A, '守护'),
+  UnitCard(5, 4, [Tag(Keyword.Blitz)], 3, 0,
+          '白袍军', 'N', UnitType.infantry, A, '闪击'),
 
   # ================= 9 指令 =================
   CommandCard(4, [Tag(Keyword.TimeWarp)], '王莽', '', effects_=(
@@ -150,29 +152,138 @@ allCards: list[UnitCard | CommandCard] = [
   ), dect_='将 2 张"T-72"分别置于友方卡组顶与洗入卡组', tl=B),
 
   # ================= 15 指令 =================
-  CommandCard(1, [], '经济危机', '', effects_=(
+  CommandCard(3, [], '经济危机', '', effects_=(
     Effect(
       trigger=Trigger(EventType.SELF_DEPLOYED),
       lifespan=Lifespan.Once(),
       actions=(
         DealDamage(Selection.HQ(Side.FRIENDLY), 3),
         DrawCards(Side.FRIENDLY, 1),
+        CustomAction(_OP_SHUFFLE, None, {'值': 16})
       ),
     ),
-  ), dect_='抽 1 张牌，对友方总部造成 3 点伤害', tl=B),
+  ), dect_='抽 1 张牌，对友方总部造成 3 点伤害，将 1 张"市场经济"洗入卡组', tl=B),
 
   # ================= 16 指令 =================
-  CommandCard(5, [], '市场经济', '', effects_=(
+  CommandCard(3, [], '市场经济', '', effects_=(
     Effect(
       trigger=Trigger(EventType.SELF_DEPLOYED),
       lifespan=Lifespan.Once(),
       actions=(
-        DrawCards(Side.FRIENDLY, 3),
+        DrawCards(Side.FRIENDLY, 4),
         CustomAction(_OP_SHUFFLE, None, {'值': 15}),
-        CustomAction(_OP_SHUFFLE, None, {'值': 16}),
+        # CustomAction(_OP_SHUFFLE, None, {'值': 16}),
       ),
     ),
-  ), dect_='抽 3 张牌，将 1 张"经济危机"和"市场经济"洗入卡组', tl=B),
+  ), dect_='抽 4 张牌，将 1 张"经济危机"洗入卡组', tl=B),
+
+  # ================= 17 调试：A 时间段穿梭 =================
+  CommandCard(2, [Tag(Keyword.TimeWarp)], '四维碎块', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 1),),
+    ),
+  ), dect_='穿梭，抽 1 张牌', tl=A),
+
+  # ================= 18 调试：B 时间段穿梭 =================
+  CommandCard(2, [Tag(Keyword.TimeWarp)], '增援未来', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 1),),
+    ),
+  ), dect_='穿梭，抽 1 张牌', tl=B),
+
+  # ================= 19 调试：C 时间段穿梭 =================
+  CommandCard(2, [Tag(Keyword.TimeWarp)], '"星环"号', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 1),),
+    ),
+  ), dect_='穿梭，抽 1 张牌', tl=C),
+
+  # ================= 20 调试：大航海开关 =================
+  CommandCard(1, [], '篡改大航海', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(CustomAction(_OP_CHANGE_EVENT, None, {'值': 0}),),
+    ),
+  ), dect_='切换“大航海”的开启/关闭状态', tl=A),
+
+  # ================= 21 调试：二战开关 =================
+  CommandCard(1, [], '二次修订凡尔赛', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(CustomAction(_OP_CHANGE_EVENT, None, {'值': 1}),),
+    ),
+  ), dect_='切换“第二次世界大战”的开启/关闭状态', tl=A),
+
+  # ================= 22 调试：冷战开关 =================
+  CommandCard(1, [], '外交调和', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(CustomAction(_OP_CHANGE_EVENT, None, {'值': 2}),),
+    ),
+  ), dect_='切换“美苏冷战”的开启/关闭状态', tl=A),
+
+  # ================= 23 调试：三战开关 =================
+  CommandCard(1, [], '导火索', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(CustomAction(_OP_CHANGE_EVENT, None, {'值': 3}),),
+    ),
+  ), dect_='切换“第三次世界大战”的开启/关闭状态', tl=B),
+
+  # ================= 24 调试：多时间线 + 部署效果 =================
+  UnitCard(2, 2, [], 2, 1, '线列步兵', 'N', UnitType.infantry, [A, B],
+          '部署：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 25 调试：守护 + 亡计 =================
+  UnitCard(2, 6, [Tag(Keyword.Guard), Tag(Keyword.Deathrattle)], 3, 2,
+          '现代步兵', 'N', UnitType.infantry, B,
+          '守护。亡计：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.UNIT_DESTROYED,
+                              subjectMatches=Selection.Self()),
+              lifespan=Lifespan(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 26 调试：被动减伤 =================
+  UnitCard(5, 5,
+          [PassiveTag(PT=PassiveType.TakeDamage, CT=ClacType.MLimit, value=2)],
+          4, 2, '天罚2500', 'N', UnitType.tank, C,
+          '本单位受到的伤害至多为 2'),
+
+  # ================= 27 调试：指向性指令 =================
+  CommandCard(3, [], '精确打击', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DealDamage(
+          Selection(owner=Side.ENEMY, zone=Zone.BOARD,
+                    pick=Pick.CHOSEN, count=1),
+          4,
+        ),
+      ),
+    ),
+  ), dect_='对一个敌方单位造成 4 点伤害', tl=B),
 ]
 
 # 原来 +1 会让最后一张牌索引越界，去掉
@@ -180,7 +291,10 @@ cardIds = list(range(len(allCards)))
 def RemoveCard(cardIdx : int):
   cardIds.remove(cardIdx)
 
-RemoveCard(15)
+RemoveCard(15)# 经济危机为衍生牌
+# RemoveCard(1)
+
+cardIds *= 5
 
 @dataclass
 class HandCard():

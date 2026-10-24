@@ -5,13 +5,15 @@ from .Player import *
 from .Cards import *
 from .ActionRecord import *
 
-from typing import Any,Literal
+from typing import Any,Literal,cast
 from copy import deepcopy
 from collections.abc import Mapping, Sequence
+from dataclasses import fields
 
 from .classes.CommandEffect import (
-    CardType, EntityId, EvalContext, EventType, GameEvent, GamePort,
-    Interpreter, PlayerId, StatKind, UnitType as EffectUnitType, Zone,
+    Action, CardType, Condition, Effect, EntityId, EvalContext, EventType,
+    GameEvent, GamePort, Interpreter, Pick, PlayerId, Selection, Side, StatKind,
+    UnitType as EffectUnitType, Zone,
     OP_ACTION_COST, OP_ADD_TO_HAND, OP_AP, OP_AP_SLOT, OP_CHANGE_EVENT,
     OP_SET_ACTION_COST, OP_SET_AP, OP_SET_AP_SLOT, OP_SET_ATTACK,
     OP_SET_HEALTH, OP_SHUFFLE, OP_TO_BOTTOM, OP_TO_TOP,
@@ -20,18 +22,52 @@ from .classes.CommandEffect import (
 
 
 
-def FindKeyw(u : Unit,k : Keyword):
+def FindKeyw(u : Unit,k : Keyword) -> int | None:
   for t in u.tags:
     if t.keyword == k:
       return u.tags.index(t)
   return None
 
-def CheckTimeWarp(cardId : int):
+def CheckTimeWarp(cardId : int) -> bool:
   card : UnitCard | CommandCard = allCards[cardId]
   for t in card.tags:
     if t.keyword == Keyword.TimeWarp:
       return True
   return False
+
+
+def GetAgileCount(u : Unit) -> int:
+  idx = FindKeyw(u, Keyword.Agile)
+  if idx is None:
+    return 0
+  value = u.tags[idx].value
+  if isinstance(value, int) and value > 0:
+    return value
+  return 1
+
+
+def IsRangedUnit(u : Unit) -> bool:
+  return u.uType in (UnitType.bomber, UnitType.artillery, UnitType.fighter)
+
+
+def FindChosenSelection(node : Any) -> Selection | None:
+  '''递归找出手牌效果里用“指定”方式选择的目标选择器'''
+  if isinstance(node, Selection):
+    return node if node.pick is Pick.CHOSEN else None
+  if isinstance(node, (list, tuple)):
+    for item in cast(Sequence[Any], node):
+      found = FindChosenSelection(item)
+      if found is not None:
+        return found
+    return None
+  if isinstance(node, (Action, Condition, Effect)):
+    for f in fields(cast(Any, node)):
+      if f.name.startswith('_'):
+        continue
+      found = FindChosenSelection(getattr(node, f.name))
+      if found is not None:
+        return found
+  return None
 
 
 DEBUG = 1
@@ -100,8 +136,8 @@ class Game(GamePort):
     self.choiceQueue: list[int | None] = []
     self.effectInterp = Interpreter(self)
 
-    self.playerA : Player = Player(0,0,[],[],20,'A')
-    self.playerB : Player = Player(0,0,[],[],20,'B')
+    self.playerA : Player = Player(0,0,[],[],30,'A')
+    self.playerB : Player = Player(0,0,[],[],30,'B')
 
     self.playerA.deck = cardIds[0:len(cardIds)//2-1]
     self.playerB.deck = cardIds[len(cardIds)//2:len(cardIds)-1]
@@ -120,8 +156,10 @@ class Game(GamePort):
     self.currentPlayer = 'A'
     self.totalTurn = 0
 
-    self.battlefields : list[Battlefield] = [Battlefield(0,[Frontline(6),Frontline(4),Frontline(6)])]
-    self.battlefields *= 3
+    self.battlefields : list[Battlefield] = [
+      Battlefield(0,[Frontline(6),Frontline(4),Frontline(6)])
+      for _ in range(3)
+    ]
 
     self.currentBF : Literal[0,1,2] = 1
 
@@ -133,33 +171,226 @@ class Game(GamePort):
     if __name__ == '__main__':
       self.InitDraw()
 
-  def InitDraw(self):
+  def InitDraw(self) -> GameState:
     self.DrawCard('A',5)
     self.DrawCard('B',6)
     state = self.GetState()
     return state
 
 
-  def GetPlayer(self,player : str):
+  def GetPlayer(self,player : str) -> Player | None:
     if player != 'N':
       return self.playerB if player == 'B' else self.playerA
     else:
       return None
     
-  def GetUnitById(self,uid : int | None):
+  def GetUnitById(self,uid : int | None) -> Unit | None:
     for fl in self.battlefields[self.currentBF].frontlines:
       for u in fl.targets:
         if u.id == uid:
           return u
   
-  def GetFlById(self,uid : int | None):
+  def GetFlById(self,uid : int | None) -> int | None:
     for fl in self.battlefields[self.currentBF].frontlines:
       for u in fl.targets:
         if u.id == uid:
           return self.battlefields[self.currentBF].frontlines.index(fl)
+
+  def IsTurn(self,player : str) -> bool:
+    '''A 在奇数回合行动，B 在偶数回合行动（与 game_session 保持一致）'''
+    return (self.totalTurn % 2 == 1) if player == 'A' else (self.totalTurn % 2 == 0)
+
+  def GetCardTags(self,cardId : int) -> list[str]:
+    return [t.keyword.value for t in allCards[cardId].tags]
+
+  def GetCardTimelines(self,cardId : int) -> list[int]:
+    return [int(t) for t in allCards[cardId].timelines]
+
+  def IsTimeWarpCard(self,cardId : int) -> bool:
+    return CheckTimeWarp(cardId)
+
+  def GetTargetKind(self,cardId : int) -> str | None:
+    '''返回指令需要的目标类型，例如 enemy_unit / friendly_hq / any_any'''
+    card = allCards[cardId]
+    selection = FindChosenSelection(getattr(card,'effects',()))
+    if selection is None:
+      return None
+    if selection.owner is Side.ENEMY:
+      side = 'enemy'
+    elif selection.owner is Side.FRIENDLY:
+      side = 'friendly'
+    else:
+      side = 'any'
+    if selection.zone is Zone.HQ:
+      zone = 'hq'
+    elif selection.zone is Zone.ANY:
+      zone = 'any'
+    else:
+      zone = 'unit'
+    return f'{side}_{zone}'
+
+  def CheckCommandTarget(self,cardId : int,player : str,target : int | None) -> str | None:
+    '''检查指向性指令的目标是否合法，返回错误信息或 None'''
+    kind = self.GetTargetKind(cardId)
+    if kind is None:
+      return None
+    if target is None:
+      return '目标未指定'
+    side,zone = kind.split('_')
+    if zone == 'unit' and target in (HQ_A,HQ_B):
+      return '目标必须是单位'
+    if zone == 'hq' and target not in (HQ_A,HQ_B):
+      return '目标必须是总部'
+    if target in (HQ_A,HQ_B):
+      owner = 'A' if target == HQ_A else 'B'
+    else:
+      u = self.GetUnitById(target)
+      if u is None:
+        return '目标不存在'
+      owner = u.owner
+      selection = FindChosenSelection(getattr(allCards[cardId],'effects',()))
+      if selection is not None and not self.effectInterp.MatchesFilters(UnitRef(target),selection):
+        return '目标不合法'
+    if side == 'enemy' and owner == player:
+      return '目标必须是敌方'
+    if side == 'friendly' and owner != player:
+      return '目标必须是友方'
+    return None
+
+  def HasEnemyFighter(self,fl : Frontline,player : str) -> bool:
+    for u in fl.targets:
+      if u.owner != player and u.uType == UnitType.fighter:
+        return True
+    return False
+
+  def FrontlineHasEnemy(self,fl : Frontline,player : str) -> bool:
+    '''前线是否还有敌方单位；有敌方单位时不能进入前线'''
+    for u in fl.targets:
+      if u.owner != player and u.dfns > 0:
+        return True
+    return False
+
+  def FrontlineHasGuard(self,fl : Frontline,owner : str) -> bool:
+    for u in fl.targets:
+      if u.owner == owner and u.dfns > 0 \
+          and FindKeyw(u,Keyword.Guard) is not None:
+        return True
+    return False
+
+  def HqIsGuarded(self,owner : str) -> bool:
+    '''底线（指挥阵线）有存活守护单位时，总部视为被守护'''
+    base = DA if owner == 'A' else DB
+    return self.FrontlineHasGuard(
+      self.battlefields[self.currentBF].frontlines[base], owner)
+
+  def GetMoveTargets(self,u : Unit | None,player : str) -> list[int]:
+    '''返回本单位本回合可以移动到的阵线下标'''
+    if u is None or u.owner != player or not self.IsTurn(player):
+      return []
+    if u.id in self.attacked and u.uType != UnitType.tank:
+      return []
+    agile = GetAgileCount(u)
+    moveLimit = agile if agile > 0 else 1
+    if self.moved.count(u.id) >= moveLimit:
+      return []
+    p = self.GetPlayer(player)
+    if p is None or p.actionPoint < u.actionCost:
+      return []
+    ownBase = DA if player == 'A' else DB
+    bf = self.battlefields[self.currentBF]
+    if u.fl == ownBase:
+      frontline = bf.frontlines[F]
+      if len(frontline.targets) < frontline.maxTargets \
+          and not self.FrontlineHasEnemy(frontline,player):
+        return [F]
+    elif u.fl == F and agile > 0:
+      if len(bf.frontlines[ownBase].targets) < bf.frontlines[ownBase].maxTargets:
+        return [ownBase]
+    return []
+
+  def GetAttackTargets(self,u : Unit | None,player : str) -> tuple[list[int], bool]:
+    '''返回 (可攻击单位 id 列表, 是否可攻击敌方总部)'''
+    if u is None or u.owner != player or not self.IsTurn(player):
+      return ([],False)
+    if u.id in self.attacked:
+      return ([],False)
+    if u.uType != UnitType.tank and self.moved.count(u.id) > 0:
+      return ([],False)
+    p = self.GetPlayer(player)
+    if p is None or p.actionPoint < u.actionCost:
+      return ([],False)
+    bf = self.battlefields[self.currentBF]
+    ranged = IsRangedUnit(u)
+    ownBase = DA if player == 'A' else DB
+    enemyBase = DB if player == 'A' else DA
+    enemyPlayer = 'B' if player == 'A' else 'A'
+    targets : list[int] = []
+    for fl_idx,fl in enumerate(bf.frontlines):
+      for t in fl.targets:
+        if t.owner == player or t.dfns <= 0:
+          continue
+        if not ranged:
+          if u.fl == F:
+            pass
+          elif u.fl == ownBase and fl_idx == F:
+            pass
+          else:
+            continue
+        if FindKeyw(t,Keyword.Guarded) is not None and not ranged:
+          continue
+        if u.uType == UnitType.bomber and self.HasEnemyFighter(fl,player):
+          continue
+        targets.append(t.id)
+    canHq = ranged or u.fl == F
+    if canHq and self.HqIsGuarded(enemyPlayer) \
+        and u.uType not in (UnitType.bomber,UnitType.artillery):
+      canHq = False
+    if u.uType == UnitType.bomber and self.HasEnemyFighter(bf.frontlines[enemyBase],player):
+      canHq = False
+    return (targets,canHq)
+
+  def MoveUnit(self,u : Unit,targetFl : int,player : str) -> None:
+    bf = self.battlefields[self.currentBF]
+    src = bf.frontlines[u.fl]
+    dst = bf.frontlines[targetFl]
+    src.targets.pop(src.targets.index(u))
+    dst.targets.append(u)
+    u.fl = targetFl
+    self.moved.append(u.id)
+    if u.uType != UnitType.tank:
+      self.attacked.append(u.id)
+    p = self.GetPlayer(player)
+    if p is not None:
+      p.actionPoint -= u.actionCost
+    self.RefreshGuarded()
+
+  def AttackUnit(self,u : Unit,target : int,player : str) -> None:
+    p = self.GetPlayer(player)
+    if p is not None:
+      p.actionPoint -= u.actionCost
+    self.attacked.append(u.id)
+    if u.uType != UnitType.tank:
+      self.moved.append(u.id)
+    self.Attack(u,target)
+
+  def RefreshGuarded(self) -> None:
+    '''守护：给同一阵线内同阵营的非守护单位挂上“被守护”'''
+    for bf in self.battlefields:
+      for fl in bf.frontlines:
+        guards : set[str] = set()
+        for u in fl.targets:
+          if FindKeyw(u,Keyword.Guard) is not None:
+            guards.add(u.owner)
+        for u in fl.targets:
+          idx = FindKeyw(u,Keyword.Guarded)
+          should = (u.owner in guards) and (FindKeyw(u,Keyword.Guard) is None)
+          if should and idx is None:
+            u.tags.append(Tag(Keyword.Guarded))
+          elif not should and idx is not None:
+            u.tags.pop(idx)
   
   
-  def ChangeEvent(self,eid : Literal[0,1,2,3]):
+  def ChangeEvent(self,eid : Literal[0,1,2,3]) -> None:
     self.events[eid] = not self.events[eid]
     if eid == E1:
       pass
@@ -214,28 +445,45 @@ class Game(GamePort):
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
             u.actionCost += 1
-        for fl in self.battlefields[B].frontlines:
+        for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
             u.atk += 3
             u.dfns += 2
+    self.RefreshHandCosts()
 
 
-  def DrawCard(self,player : str,num : int):
+  def HandCost(self,hc : HandCard) -> int:
+    '''手牌当前费用：三战开启时，A 时间线的手牌 -2 费'''
+    cost = allCards[hc.id].cost
+    if self.events[E4] and A in allCards[hc.id].timelines:
+      cost = max(0,cost - 2)
+    return cost
+
+  def RefreshHandCosts(self) -> None:
+    for p in (self.playerA,self.playerB):
+      for hc in p.handCards:
+        hc.cost = self.HandCost(hc)
+
+  def DrawCard(self,player : str,num : int) -> None:
     playerT = self.GetPlayer(player)
     if playerT:
       for _ in range(num):
         if len(playerT.deck) != 0 :
           temp : HandCard = CardToHand(playerT.deck.pop())
-          if (self.currentBF == 0) and self.events[3]:
-            temp.cost = temp.cost - 2 if temp.cost >= 2 else 0
+          temp.cost = self.HandCost(temp)
           playerT.handCards.append(temp)
         else:
           playerT.hq -= 3
 
-  def TimeWarp(self,t : Literal[0,1,2]):
+  def TimeWarp(self,t : int) -> None:
+    if t not in (A,B,C):
+      raise Exception('不存在的时间线')
     self.currentBF = t
 
-  def Deploy(self, u : Unit, fl : int, player : Literal['A' , 'B']):
+  def Deploy(self, u : Unit, fl : int, player : Literal['A' , 'B']) -> None:
+    if fl == F and self.FrontlineHasEnemy(
+        self.battlefields[self.currentBF].frontlines[F], player):
+      raise Exception('前线被敌方占领，请先清空')
 
     if not self.events[E2]:  # 第二次世界大战：关闭
       if u.utl == 0:
@@ -260,12 +508,6 @@ class Game(GamePort):
     u.owner = player
     self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
 
-    # 守护：整条阵线 —— 刻意设计，保留
-    if(FindKeyw(u, Keyword.Guard) is not None):
-      for un in self.battlefields[self.currentBF].frontlines[fl].targets:
-        if(FindKeyw(un, Keyword.Guard) is not None):
-          un.tags.append(Tag(Keyword.Guarded))
-
     if(FindKeyw(u, Keyword.Blitz) is None):
       self.attacked.append(u.id)
       self.moved.append(u.id)
@@ -277,14 +519,19 @@ class Game(GamePort):
     self.effectInterp.AttachCard(card, u.owner, ref)          # 触发 SELF_DEPLOYED（部署效果）
     self.effectInterp.HandleEvent(                            # 触发全场监听（UNIT_DEPLOYED）
         GameEvent(EventType.UNIT_DEPLOYED, actor=u.owner, subject=ref))
+    self.RefreshGuarded()
 
   
 
-  def Attack(self, u : Unit, tid : int | None):
+  def Attack(self, u : Unit, tid : int | None) -> None:
     # 攻击方视角的上下文，供 Port 使用
     ctx = self.effectInterp.MakeContext(u.owner, UnitRef(u.id))
 
     if tid in (HQ_A, HQ_B):                       # 攻击总部
+      hqOwner = 'A' if tid == HQ_A else 'B'
+      if self.HqIsGuarded(hqOwner) \
+          and u.uType not in (UnitType.bomber, UnitType.artillery):
+        raise Exception('敌方总部被守护')
       atk = ClacAtk(u.tags, u.atk)
       target = HqRef('A') if tid == HQ_A else HqRef('B')
       self.effectInterp.port.DealDamage(UnitRef(u.id), target, atk, ctx)
@@ -293,7 +540,7 @@ class Game(GamePort):
     t = self.GetUnitById(tid)                     # 攻击单位
     if t is None:
       raise Exception('你不能攻击滚木')
-    if FindKeyw(t, Keyword.Guarded):
+    if FindKeyw(t, Keyword.Guarded) is not None:
       if u.uType not in (UnitType.bomber, UnitType.artillery):
         raise Exception('此单位被守护')
 
@@ -307,7 +554,7 @@ class Game(GamePort):
 
 
 
-  def UseCommand(self, player : Player, command : CommandCard, tid : int | None):
+  def UseCommand(self, player : Player, command : CommandCard, tid : int | None) -> None:
     self.choiceQueue.clear()
     if tid is not None:
       self.choiceQueue.append(tid)
@@ -316,13 +563,13 @@ class Game(GamePort):
 
 
 
-  def ReceiveRecord(self):
+  def ReceiveRecord(self) -> None:
     ...#疑似肺雾函数
     #self.ProcessRecord(...)
   
-  def ProcessRecord(self,entry : LogEntry):
+  def ProcessRecord(self,entry : LogEntry) -> Result:
     eType = entry.actionType
-    result : Result | None = None
+    result : Result
     player = entry.actorPlayer
     try:
       playerStruct = self.GetPlayer(player)
@@ -337,31 +584,46 @@ class Game(GamePort):
           raise Exception('不能使用滚木指令')
         if entry.handCardIdx is None:
           raise Exception('不能用滚木手牌凭空使用指令')
-        
+        if entry.handCardIdx < 0 or entry.handCardIdx >= len(playerStruct.handCards):
+          raise Exception('手牌索引不存在')
+        handCard = playerStruct.handCards[entry.handCardIdx]
+        if handCard.id != entry.actorId:
+          raise Exception('手牌与指令不匹配')
         card : CommandCard = allCards[entry.actorId] # type: ignore
-        if self.currentBF != card.timeline:
+        if self.currentBF not in card.timelines:
           raise Exception('禁止出现超时空战士')
         if type(card) != CommandCard:
           raise Exception('单位不能当作指令使用 前端在干嘛')
-        if playerStruct.actionPoint < card.cost:
+        if playerStruct.actionPoint < handCard.cost:
           raise Exception('行动点不足')
+        targetErr = self.CheckCommandTarget(entry.actorId,player,entry.target)
+        if targetErr is not None:
+          raise Exception(targetErr)
         self.UseCommand(playerStruct,card,entry.target)
-        playerStruct.actionPoint -= playerStruct.handCards[entry.handCardIdx].cost
+        playerStruct.actionPoint -= handCard.cost
         playerStruct.handCards.pop(entry.handCardIdx)
         ...# 重点
       elif(eType == ActionType.Deploy):
         if(entry.actorId is None):
           raise Exception('不能部署滚木')
-        
-        if(allCards[entry.actorId].timeline != self.currentBF): # type: ignore
+        if entry.handCardIdx is None:
+          raise Exception('不能用滚木手牌部署单位')
+        if entry.handCardIdx < 0 or entry.handCardIdx >= len(playerStruct.handCards):
+          raise Exception('手牌索引不存在')
+        handCard = playerStruct.handCards[entry.handCardIdx]
+        if handCard.id != entry.actorId:
+          raise Exception('手牌与单位不匹配')
+        if(self.currentBF not in allCards[entry.actorId].timelines): # type: ignore
           print("TEST",allCards[entry.actorId],self.currentBF) # type: ignore
           raise Exception('禁止出现超时空战士')
-        if playerStruct.actionPoint < allCards[entry.actorId].cost:
+        if playerStruct.actionPoint < handCard.cost:
           raise Exception('行动点不足')
         unitCard = allCards[entry.actorId]
         if(type(unitCard) != UnitCard):
           raise Exception('不能部署指令，啥子比。')
         assert type(unitCard) == UnitCard
+        if entry.target is None:
+          raise Exception('未选择部署阵线')
 
         if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
           raise Exception('单位不能放对面家里')
@@ -370,16 +632,14 @@ class Game(GamePort):
           if len(self.battlefields[self.currentBF].frontlines[entry.target].targets)\
               >= self.battlefields[self.currentBF].frontlines[entry.target].maxTargets:
             raise Exception('指挥阵线已满')
-          newUnit = CardToUnit(unitCard)
+          newUnit = CardToUnit(unitCard, self.currentBF)
           newUnit.id = self.lastId + 1
           self.lastId += 1
           assert entry.actorPlayer in ('A', 'B')
           newUnit.owner = entry.actorPlayer
           newUnit.fl = entry.target
-          if entry.handCardIdx is None:
-            raise Exception('不能用滚木手牌部署单位')
           self.Deploy(newUnit,entry.target, entry.actorPlayer)
-          playerStruct.actionPoint -= playerStruct.handCards[entry.handCardIdx].cost
+          playerStruct.actionPoint -= handCard.cost
           playerStruct.handCards.pop(entry.handCardIdx)
           
 
@@ -394,45 +654,63 @@ class Game(GamePort):
         u = self.GetUnitById(entry.actorId)
         if u is None:
           raise Exception('为什么滚木在移动？')
+        if u.owner != player:
+          raise Exception('不能移动敌方单位')
+        if entry.target is None:
+          raise Exception('未选择移动位置')
+        if u.id in self.attacked and u.uType != UnitType.tank:
+          raise Exception('本单位本回合不能移动')
+        agile = GetAgileCount(u)
+        moveLimit = agile if agile > 0 else 1
+        if self.moved.count(u.id) >= moveLimit:
+          raise Exception('本单位本回合不能移动')
         if playerStruct.actionPoint < u.actionCost:
           raise Exception('行动点不足')
-        try :
-          if self.moved.index(u.id):
-            raise Exception('本单位本回合不能移动')
-        except ValueError: # index函数未找到报错
-          if u.fl == F:
-            raise Exception('前线单位不能移出前线')
-          elif len(self.battlefields[self.currentBF].frontlines[F].targets)\
+        targets = self.GetMoveTargets(u,player)
+        if entry.target not in targets:
+          if entry.target == F and self.FrontlineHasEnemy(
+              self.battlefields[self.currentBF].frontlines[F], player):
+            raise Exception('前线被敌方占领，请先清空')
+          if entry.target == F and len(self.battlefields[self.currentBF].frontlines[F].targets)\
               >= self.battlefields[self.currentBF].frontlines[F].maxTargets:
             raise Exception('前线已满')
-          else:
-            u.fl = F
-            targetFL = self.battlefields[self.currentBF].frontlines[u.fl]
-            targetFL.targets.pop(targetFL.targets.index(u))
-            self.moved.append(u.id)
-            if u.uType != UnitType.tank:
-              self.attacked.append(u.id)
+          if u.fl == F:
+            raise Exception('前线单位不能移出前线')
+          raise Exception('本单位不能移动到该阵线')
+        self.MoveUnit(u,entry.target,player)
       elif eType == ActionType.Attack:
         u = self.GetUnitById(entry.actorId)
         if(u is None):
           raise Exception('你不能指挥滚木攻击')
-        ufl = self.GetFlById(entry.actorId)
-        tfl = self.GetFlById(entry.target)
-        uType = u.uType
-        if(uType in (UnitType.bomber, UnitType.artillery, UnitType.fighter)):
-          self.Attack(u,entry.target)
-        else:
-          if(ufl in (DA, DB) and tfl in (DA, DB)):
+        if u.owner != player:
+          raise Exception('不能指挥敌方单位攻击')
+        if entry.target is None:
+          raise Exception('未选择攻击目标')
+        if u.id in self.attacked:
+          raise Exception('本单位本回合不能攻击')
+        if u.uType != UnitType.tank and self.moved.count(u.id) > 0:
+          raise Exception('本单位本回合不能攻击')
+        if playerStruct.actionPoint < u.actionCost:
+          raise Exception('行动点不足')
+        enemyHq = HQ_B if player == 'A' else HQ_A
+        enemyPlayer = 'B' if player == 'A' else 'A'
+        targets,canHq = self.GetAttackTargets(u,player)
+        if entry.target in (HQ_A,HQ_B):
+          if entry.target != enemyHq:
+            raise Exception('不能攻击友方总部')
+          if not canHq:
+            if self.HqIsGuarded(enemyPlayer) \
+                and u.uType not in (UnitType.bomber,UnitType.artillery):
+              raise Exception('敌方总部被守护')
             raise Exception('攻击距离不足')
-          else:
-            try:
-              if self.attacked.index(u.id):
-                self.Attack(u,entry.target)
-                self.attacked.append(u.id)
-                if u.uType != UnitType.tank:
-                  self.moved.append(u.id)
-            except ValueError:
-              raise Exception('本单位本回合不能攻击')
+        elif entry.target not in targets:
+          t = self.GetUnitById(entry.target)
+          if t is None:
+            raise Exception('目标不存在')
+          if FindKeyw(t,Keyword.Guarded) is not None and not IsRangedUnit(u):
+            raise Exception('此单位被守护')
+          raise Exception('攻击距离不足')
+        self.AttackUnit(u,entry.target,player)
         
 
       
@@ -446,28 +724,21 @@ class Game(GamePort):
     
     return result
 
-  def Check(self):
+  def Check(self) -> None:
     for bf in self.battlefields:
       for fl in bf.frontlines:
-        f = False
-        for u in fl.targets:
+        for u in list(fl.targets):
           if(u.dfns <= 0):
             ref = UnitRef(u.id)
             self.effectInterp.HandleEvent(
               GameEvent(EventType.UNIT_DESTROYED, actor=u.owner, subject=ref))
             self.effectInterp.DetachHost(ref)
             fl.targets.pop(fl.targets.index(u))
-            bf.unitsNum -= 1
-            continue
-          if FindKeyw(u,Keyword.Guard):
-            f = True
-        if not f:
-          for u in fl.targets:
-            if FindKeyw(u,Keyword.Guarded):
-              u.tags.pop(u.tags.index(Tag(Keyword.Guarded)))
+      bf.unitsNum = sum(len(fl.targets) for fl in bf.frontlines)
+    self.RefreshGuarded()
 
 
-  def GetState(self):
+  def GetState(self) -> GameState:
     self.Check()
     state = GameState(
       deepcopy(self.playerA),\
@@ -479,8 +750,23 @@ class Game(GamePort):
     return state
 
 
+  def GetWinner(self) -> Literal['A','B','draw'] | None:
+    '''返回胜利方；双方同时被摧毁时为平局'''
+    a = self.playerA.hq
+    b = self.playerB.hq
+    if a <= 0 and b <= 0:
+      return 'draw'
+    if a <= 0:
+      return 'B'
+    if b <= 0:
+      return 'A'
+    return None
+
+
   def TurnStart(self, lastTurnPlayer : str) -> None:
     nextPlayer = 'B' if lastTurnPlayer == 'A' else 'A'
+    self.moved.clear()
+    self.attacked.clear()
     self.effectInterp.HandleEvent(
     GameEvent(EventType.TURN_STARTED, actor=nextPlayer))
     # for c in self.clocks:
@@ -602,7 +888,8 @@ class Game(GamePort):
         HqRef('B') if tid == HQ_B else UnitRef(tid))
       if ref in candidates:
         return ref
-    return candidates[0] if candidates else None
+      raise Exception('目标不合法')
+    return None
 
   # ---------------- 操作 ----------------
 
@@ -700,7 +987,7 @@ class Game(GamePort):
       return
     if not isinstance(card, UnitCard):
       return
-    u = CardToUnit(card)
+    u = CardToUnit(card, self.currentBF)
     u.id = self.lastId + 1
     self.lastId += 1
     u.owner = player
@@ -732,7 +1019,9 @@ class Game(GamePort):
       elif op == OP_SET_AP_SLOT:
         owner.apSlot = value
       elif op == OP_ADD_TO_HAND:
-        owner.handCards.append(CardToHand(value))
+        hc = CardToHand(value)
+        hc.cost = self.HandCost(hc)
+        owner.handCards.append(hc)
       elif op == OP_TO_TOP:
         owner.deck.append(value)
       elif op == OP_TO_BOTTOM:
@@ -775,7 +1064,7 @@ class Game(GamePort):
 
 
 
-def debug(arg : Any):
+def debug(arg : Any) -> None:
   print(arg)
 
 if __name__ == '__main__':
