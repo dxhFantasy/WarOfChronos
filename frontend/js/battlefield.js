@@ -305,18 +305,33 @@ function handleZoneClick(zone) {
         if (!deployState.prepared) {
             return;
         }
-        if (!frontlineAllowsDeploy()) {
+        if (!deployState.time_warp && !frontlineAllowsDeploy()) {
             showNotice("前线已被敌方占领或已经满员", "warning");
             return;
         }
     }
-    socket.send(JSON.stringify({
+    if (deployState.time_warp) {
+        // 穿梭单位：先确定部署位置，再选择要部署到的时间线
+        deployState.pending_zone = zone;
+        openTimelineSelect();
+        return;
+    }
+    sendDeploy(zone, null);
+}
+
+function sendDeploy(zone, timeline) {
+    let payload = {
         action: "player_operation",
         op_type: "deploy_unit",
         card_index: deployState.card_index,
         target: zone === "base" ? "player_base" : "frontline"
-    }));
+    };
+    if (timeline !== null && timeline !== undefined) {
+        payload.timeline = timeline;
+    }
+    socket.send(JSON.stringify(payload));
     $("#hand-overlay").removeClass("active");
+    hideTimelineSelect();
     cancelDeploy();
 }
 
@@ -339,12 +354,12 @@ function handleUseCommand() {
     if (!deployState.active) {
         return;
     }
-    if (deployState.target_kind) {
-        enterCommandTarget();
-        return;
-    }
     if (deployState.time_warp) {
         openTimelineSelect();
+        return;
+    }
+    if (deployState.target_kind) {
+        enterCommandTarget();
         return;
     }
     sendUseCard(null);
@@ -456,6 +471,10 @@ function pickCommandTargetHq(side) {
 }
 
 function afterCommandTargetPicked() {
+    if (deployState.command_timeline !== null) {
+        sendUseCard(deployState.command_timeline);
+        return;
+    }
     if (deployState.time_warp) {
         openTimelineSelect();
         return;
@@ -489,8 +508,14 @@ function openTimelineSelect() {
     if (!gameState) {
         return;
     }
+    let isDeploy = !!deployState.pending_zone;
+    $("#timeline-title").text(isDeploy ? "穿梭部署" : "穿梭");
+    $("#timeline-hint").text(isDeploy
+        ? "选择要部署到的时间线"
+        : "选择要前往的时间线");
     let options = $("#timeline-options");
     options.empty();
+    let enabled = 0;
     TIMELINE_NAMES.forEach((name, index) => {
         let button = $(`
             <button class="wc-button timeline-option" data-timeline="${index}">
@@ -500,15 +525,115 @@ function openTimelineSelect() {
         `);
         if (index === gameState.cur_bf) {
             button.prop("disabled", true);
+        } else if (isDeploy && !timelineDeployAllowed(index)) {
+            button.prop("disabled", true);
+            button.attr("title", "该时间线没有可用的部署位置");
+        } else {
+            enabled += 1;
         }
         options.append(button);
     });
+    if (isDeploy && enabled === 0) {
+        showNotice("没有可部署的时间线", "warning");
+    }
     $("#use-command-button").addClass("hidden");
     $("#timeline-modal").addClass("active");
 }
 
+function timelineDeployAllowed(index) {
+    if (!gameState || !gameState.battlefields) {
+        return false;
+    }
+    let bf = gameState.battlefields[index];
+    if (!bf || !bf.frontlines) {
+        return false;
+    }
+    let line_index = 1;
+    if (deployState.pending_zone === "base") {
+        line_index = gameState.my_side === "A" ? 0 : 2;
+    }
+    let line = bf.frontlines[line_index];
+    if (!line) {
+        return false;
+    }
+    if (line.targets.length >= line.maxTargets) {
+        return false;
+    }
+    if (line_index === 1) {
+        let owner_ok = !line.owner
+            || line.owner === "N"
+            || line.owner === gameState.my_side;
+        if (!owner_ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function confirmTimeline(timeline) {
+    if (deployState.pending_zone) {
+        let zone = deployState.pending_zone;
+        deployState.pending_zone = null;
+        sendDeploy(zone, timeline);
+        return;
+    }
+    if (deployState.target_kind) {
+        deployState.command_timeline = timeline;
+        hideTimelineSelect();
+        enterCommandTarget();
+        return;
+    }
+    sendUseCard(timeline);
+}
+
 function hideTimelineSelect() {
     $("#timeline-modal").removeClass("active");
+}
+
+function playAttackAnimation(data) {
+    if (!data || data.attacker_id === undefined) {
+        return;
+    }
+    let attacker = $(`.battle-unit[data-unit-id="${data.attacker_id}"]`);
+    let target;
+    if (data.target_hq) {
+        let my_side = gameState ? gameState.my_side : "A";
+        target = data.target_hq_owner === my_side
+            ? $("#player-hq")
+            : $("#enemy-hq");
+    } else {
+        target = $(`.battle-unit[data-unit-id="${data.target_id}"]`);
+    }
+    if (!attacker.length || !target.length) {
+        return;
+    }
+    let ar = attacker[0].getBoundingClientRect();
+    let tr = target[0].getBoundingClientRect();
+    let x1 = ar.left + ar.width / 2;
+    let y1 = ar.top + ar.height / 2;
+    let x2 = tr.left + tr.width / 2;
+    let y2 = tr.top + tr.height / 2;
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+    let length = Math.hypot(dx, dy);
+    let angle = Math.atan2(dy, dx) * 180 / Math.PI;
+    let line = $("<div class='attack-line'></div>").css({
+        left: `${x1}px`,
+        top: `${y1 - 1}px`,
+        width: `${length}px`,
+        transform: `rotate(${angle}deg)`
+    });
+    $("body").append(line);
+    attacker.addClass("attack-source");
+    target.addClass("attack-target");
+    setTimeout(() => {
+        line.addClass("attack-line-fade");
+    }, 380);
+    setTimeout(() => {
+        line.remove();
+        attacker.removeClass("attack-source");
+        target.removeClass("attack-target");
+    }, 650);
 }
 
 $(document).on("click", ".battle-unit", function(e) {
@@ -543,7 +668,7 @@ $(document).on("click", ".timeline-option", function() {
     if (Number.isNaN(timeline)) {
         return;
     }
-    sendUseCard(timeline);
+    confirmTimeline(timeline);
 });
 $("#timeline-cancel-button").click(() => {
     hideTimelineSelect();

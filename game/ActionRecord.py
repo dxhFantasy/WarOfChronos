@@ -25,6 +25,7 @@ class LogEntry:
   actorId : int | None #发起该操作的单位Id 若为指令则为指令卡牌id
   target : int | None #操作目标 如攻击目标 抽牌数量 部署单位的目标阵线
   handCardIdx : int | None #使用的手牌索引
+  timeline : int | None = None #穿梭牌/穿梭单位要切换到的目标时间线
 
 if __name__ == '__main__':
   ...

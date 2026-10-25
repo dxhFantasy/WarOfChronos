@@ -1,15 +1,15 @@
 [
     {
-        "name" : "ZT99A主战坦克",
+        "name": "ZTZ99A主战坦克",
         "attack": 6,
-        "defense": 8,
-        "cost": 6,
+        "defense": 7,
+        "cost": 7,
         "actionCost": 2,
         "type": "unit",
         "effect": ""
     },
     {
-        "name" : "2S38-\"偏瘫\"",
+        "name": "2S38\"偏流\"",
         "attack": 4,
         "defense": 2,
         "cost": 3,
@@ -18,13 +18,13 @@
         "effect": ""
     },
     {
-        "name" : "破釜沉舟",
+        "name": "破釜沉舟",
         "cost": 7,
         "type": "command",
         "effect": "使所有友方单位获得 +4-1 , 对友方总部造成 7 点伤害"
     },
     {
-        "name" : "全频带阻塞干扰",
+        "name": "全频带阻塞干扰",
         "cost": 3,
         "type": "command",
         "effect": "使所有单位获得 +4 行动花费"
@@ -61,9 +61,9 @@
     },
     {
         "name": "白袍军",
-        "attack": 4,
-        "defense": 5,
-        "cost": 4,
+        "attack": 5,
+        "defense": 4,
+        "cost": 3,
         "actionCost": 0,
         "type": "unit",
         "effect": ""
@@ -201,8 +201,8 @@
         "effect": "对一个敌方单位造成 4 点伤害"
     },
     {
-        "name": "志愿军第38军",
-        "attack": 3,
+        "name": "志愿军第38军\"万岁军\"",
+        "attack": 5,
         "defense": 4,
         "cost": 4,
         "actionCost": 1,
@@ -211,7 +211,7 @@
     },
     {
         "name": "第101空降师",
-        "attack": 3,
+        "attack": 4,
         "defense": 4,
         "cost": 4,
         "actionCost": 1,
@@ -240,7 +240,7 @@
         "name": "第22特别空勤团",
         "attack": 3,
         "defense": 3,
-        "cost": 4,
+        "cost": 3,
         "actionCost": 1,
         "type": "unit",
         "effect": "Who Dares Wins.\n闪击。部署：使一个随机敌方单位攻击力 -2"
@@ -280,5 +280,134 @@
         "cost": 4,
         "type": "command",
         "effect": "抽 5 张牌，对友方总部造成 5 点伤害"
+    },
+    {
+        "name": "志愿军第15军",
+        "attack": 4,
+        "defense": 6,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "上甘岭的坑道部队。守护。部署：所有友方步兵获得 +0+1"
+    },
+    {
+        "name": "上甘岭战役",
+        "cost": 4,
+        "type": "command",
+        "effect": "所有友方步兵获得 +1+1，抽 1 张牌"
+    },
+    {
+        "name": "时序裂隙",
+        "cost": 3,
+        "type": "command",
+        "effect": "全时间线可用。穿梭，抽 1 张牌"
+    },
+    {
+        "name": "漂流者协议",
+        "cost": 4,
+        "type": "command",
+        "effect": "全时间线可用。穿梭，抽 2 张牌"
+    },
+    {
+        "name": "回环信标",
+        "cost": 2,
+        "type": "command",
+        "effect": "穿梭，抽 1 张牌"
+    },
+    {
+        "name": "时间折叠",
+        "cost": 3,
+        "type": "command",
+        "effect": "穿梭，抽 2 张牌"
+    },
+    {
+        "name": "轨道空降第501团",
+        "attack": 4,
+        "defense": 4,
+        "cost": 3,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "预备。部署：抽 1 张牌"
+    },
+    {
+        "name": "第15机动步兵营",
+        "attack": 3,
+        "defense": 7,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "守护"
+    },
+    {
+        "name": "第120穿梭特遣队",
+        "attack": 3,
+        "defense": 3,
+        "cost": 2,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "穿梭。部署：抽 1 张牌"
+    },
+    {
+        "name": "强相互作用力装甲",
+        "attack": 6,
+        "defense": 3,
+        "cost": 6,
+        "actionCost": 2,
+        "type": "unit",
+        "effect": "本单位受到的伤害至多为 2"
+    },
+    {
+        "name": "第9轨道突击营",
+        "attack": 6,
+        "defense": 5,
+        "cost": 5,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "闪击"
+    },
+    {
+        "name": "曲率侦察舰",
+        "attack": 4,
+        "defense": 4,
+        "cost": 4,
+        "actionCost": 1,
+        "type": "unit",
+        "effect": "闪击"
+    },
+    {
+        "name": "技术泄露",
+        "cost": 3,
+        "type": "command",
+        "effect": "穿梭。对所有敌方单位造成 2 点伤害"
+    },
+    {
+        "name": "戴森环工程",
+        "cost": 6,
+        "type": "command",
+        "effect": "获得 2 个行动点槽，抽 1 张牌"
+    },
+    {
+        "name": "纳米修复云",
+        "cost": 3,
+        "type": "command",
+        "effect": "所有友方单位恢复 2 点生命"
+    },
+    {
+        "name": "水滴",
+        "cost": 7,
+        "type": "command",
+        "effect": "对敌方总部造成 7 点伤害"
+    },
+    {
+        "name": "时间锚点",
+        "cost": 2,
+        "type": "command",
+        "effect": "切换“第三次世界大战”的开启/关闭状态"
+    },
+    {
+        "name": "轨道轰炸",
+        "cost": 4,
+        "type": "command",
+        "effect": "对所有前线敌方单位造成 3 点伤害"
     }
 ]
