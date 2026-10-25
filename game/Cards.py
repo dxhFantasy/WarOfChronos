@@ -3,7 +3,7 @@ from .classes.Target import *
 from .classes.Card import PassiveTag, PassiveType, ClacType, Tag, Keyword
 from .classes.CommandEffect import (
     Buff, CustomAction, DealDamage, DrawCards, Effect, EndPoint, EventType,
-    ForEach, Lifespan, PlayEffect, Selection, Side, StartPoint, Trigger,
+    ForEach, Heal, Lifespan, PlayEffect, Selection, Side, StartPoint, Trigger,
     Pick, Zone, UnitType as EffectUnitType,
 )
 # 下划线别名：不会被 `from .Cards import *` 转发，避免 Final 重分配报错
@@ -397,17 +397,200 @@ allCards: list[UnitCard | CommandCard] = [
       ),
     ),
   ), dect_='抽 5 张牌，对友方总部造成 5 点伤害', tl=B),
+
+  # ================= 38 A：志愿军第15军 =================
+  UnitCard(4, 6, [Tag(Keyword.Guard)], 4, 1, '志愿军第15军', 'N',
+          UnitType.infantry, A,
+          '上甘岭的坑道部队。守护。部署：所有友方步兵获得 +0+1',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(
+                Buff(Selection.Units(Side.FRIENDLY,
+                                     EffectUnitType.INFANTRY), 0, 1),
+              ),
+            ),
+          )),
+
+  # ================= 39 A：上甘岭战役 =================
+  CommandCard(4, [], '上甘岭战役', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        Buff(Selection.Units(Side.FRIENDLY, EffectUnitType.INFANTRY), 1, 1),
+        DrawCards(Side.FRIENDLY, 1),
+      ),
+    ),
+  ), dect_='所有友方步兵获得 +1+1，抽 1 张牌', tl=A),
+
+  # ================= 40 全时间线穿梭 =================
+  CommandCard(3, [Tag(Keyword.TimeWarp)], '时序裂隙', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 1),),
+    ),
+  ), dect_='全时间线可用。穿梭，抽 1 张牌', tl=[A, B, C]),
+
+  # ================= 41 全时间线穿梭 =================
+  CommandCard(4, [Tag(Keyword.TimeWarp)], '漂流者协议', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 2),),
+    ),
+  ), dect_='全时间线可用。穿梭，抽 2 张牌', tl=[A, B, C]),
+
+  # ================= 42 C：回环信标 =================
+  CommandCard(2, [Tag(Keyword.TimeWarp)], '回环信标', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 1),),
+    ),
+  ), dect_='穿梭，抽 1 张牌', tl=C),
+
+  # ================= 43 C：时间折叠 =================
+  CommandCard(3, [Tag(Keyword.TimeWarp)], '时间折叠', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DrawCards(Side.FRIENDLY, 2),),
+    ),
+  ), dect_='穿梭，抽 2 张牌', tl=C),
+
+  # ================= 44 C：轨道空降第501团 =================
+  UnitCard(4, 4, [Tag(Keyword.Prepared)], 3, 1, '轨道空降第501团', 'N',
+          UnitType.infantry, C,
+          '预备。部署：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 45 C：时间警察 =================
+  UnitCard(3, 7, [Tag(Keyword.Guard)], 4, 1, '第15机动步兵营', 'N',
+          UnitType.infantry, C,
+          '守护',
+          effects_=(
+            # Effect(
+            #   trigger=Trigger(EventType.SELF_DEPLOYED),
+            #   lifespan=Lifespan.Once(),
+            #   actions=(
+            #     Buff(Selection(owner=Side.ENEMY, zone=Zone.BOARD,
+            #                   pick=Pick.RANDOM, count=1),
+            #         -2, 0),
+            #   ),
+            # ),
+          )),
+
+  # ================= 46 C：未来考古学家 =================
+  UnitCard(3, 3, [Tag(Keyword.TimeWarp)], 2, 1, '第120穿梭特遣队', 'N',
+          UnitType.infantry, C,
+          '穿梭。部署：抽 1 张牌',
+          effects_=(
+            Effect(
+              trigger=Trigger(EventType.SELF_DEPLOYED),
+              lifespan=Lifespan.Once(),
+              actions=(DrawCards(Side.FRIENDLY, 1),),
+            ),
+          )),
+
+  # ================= 47 C：反熵装甲 =================
+  UnitCard(6, 3,
+          [PassiveTag(PT=PassiveType.TakeDamage, CT=ClacType.MLimit, value=2)],
+          6, 2, '强相互作用力装甲', 'N', UnitType.tank, C,
+          '本单位受到的伤害至多为 2'),
+
+  # ================= 48 C：第9轨道突击营 =================
+  UnitCard(6, 5, [Tag(Keyword.Blitz)], 5, 1, '第9轨道突击营', 'N',
+          UnitType.infantry, C, '闪击'),
+
+  # ================= 49 C：曲率侦察舰 =================
+  UnitCard(4, 4, [Tag(Keyword.Blitz)], 4, 1, '曲率侦察舰', 'N',
+          UnitType.fighter, C, '闪击'),
+
+  # ================= 50 C：时间线收束 =================
+  CommandCard(3, [Tag(Keyword.TimeWarp)], '技术泄露', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(DealDamage(Selection.Units(Side.ENEMY), 2),),
+    ),
+  ), dect_='穿梭。对所有敌方单位造成 2 点伤害', tl=C),
+
+  # ================= 51 C：戴森环工程 =================
+  CommandCard(6, [], '戴森环工程', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        CustomAction(_OP_AP_SLOT, None, {'值': 2}),
+        DrawCards(Side.FRIENDLY, 1),
+      ),
+    ),
+  ), dect_='获得 2 个行动点槽，抽 1 张牌', tl=C),
+
+  # ================= 52 C：纳米修复云 =================
+  CommandCard(3, [], '纳米修复云', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        Heal(Selection.Units(Side.FRIENDLY), 2),
+      ),
+    ),
+  ), dect_='所有友方单位恢复 2 点生命', tl=C),
+
+  # ================= 53 C：奇点炮 =================
+  CommandCard(7, [], '水滴', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DealDamage(Selection.HQ(Side.ENEMY), 7),
+      ),
+    ),
+  ), dect_='对敌方总部造成 7 点伤害', tl=C),
+
+  # ================= 54 C：时间锚点 =================
+  CommandCard(2, [], '时间锚点', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(CustomAction(_OP_CHANGE_EVENT, None, {'值': 3}),),
+    ),
+  ), dect_='切换“第三次世界大战”的开启/关闭状态', tl=C),
+
+  # ================= 55 C：轨道轰炸 =================
+  CommandCard(4, [], '轨道轰炸', '', effects_=(
+    Effect(
+      trigger=Trigger(EventType.SELF_DEPLOYED),
+      lifespan=Lifespan.Once(),
+      actions=(
+        DealDamage(Selection(owner=Side.ENEMY, zone=Zone.BOARD,
+                            frontline=1), 3),
+      ),
+    ),
+  ), dect_='对所有前线敌方单位造成 3 点伤害', tl=C),
 ]
+def RemoveCard(cardIdx : int):
+  cardIds.remove(cardIdx)
+
 
 # 原来 +1 会让最后一张牌索引越界，去掉
 cardIds = list(range(len(allCards)))
-def RemoveCard(cardIdx : int):
-  cardIds.remove(cardIdx)
+
 
 RemoveCard(15)# 经济危机为衍生牌
 # RemoveCard(1)
 
-cardIds *= 3
+cardIds *= 2
 random.shuffle(cardIds)
 
 @dataclass

@@ -667,6 +667,20 @@ h1 {
         box-shadow .2s,
         transform .2s;
 }
+#surrender-button {
+    position: absolute;
+    right: 3%;
+    top: 61%;
+    transform: translateY(-50%);
+    font-size: 18px;
+    color: #fca5a5;
+    border-color: rgba(239, 68, 68, .5);
+    cursor: pointer;
+}
+#surrender-button:hover {
+    border-color: #ef4444;
+    box-shadow: 0 0 12px rgba(239, 68, 68, .65);
+}
 
 #player-base-units.deployable,
 #frontline-units.deployable {
@@ -967,6 +981,34 @@ h1 {
     border:2px solid #ef4444;
     box-shadow:0 0 20px rgba(239,68,68,.8);
     animation:target-pulse 1.2s infinite;
+}
+.attack-line {
+    position:fixed;
+    height:3px;
+    z-index:3600;
+    pointer-events:none;
+    transform-origin:0 50%;
+    background:linear-gradient(90deg,#fbbf24,#ef4444);
+    box-shadow:0 0 8px rgba(239,68,68,.9);
+    transition:opacity .25s ease;
+}
+.attack-line::after {
+    content:"";
+    position:absolute;
+    right:-3px;
+    top:-4px;
+    border-left:9px solid #ef4444;
+    border-top:5px solid transparent;
+    border-bottom:5px solid transparent;
+}
+.attack-line-fade {
+    opacity:0;
+}
+.attack-source {
+    box-shadow:0 0 18px rgba(251,191,36,.95) !important;
+}
+.attack-target {
+    box-shadow:0 0 18px rgba(239,68,68,.95) !important;
 }
 #unit-actions {
     position:fixed;
