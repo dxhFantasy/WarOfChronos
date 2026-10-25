@@ -124,6 +124,74 @@ function findUnitElement(unit_id) {
     return $(`.battle-unit[data-unit-id="${unit_id}"]`);
 }
 
+function hideUnitTooltip() {
+    $("#unit-detail-tooltip").removeClass("active");
+}
+
+function showUnitTooltip(unit, element) {
+    if (!unit || !gameState) {
+        return;
+    }
+    let info = cardInfo[unit.cardId] || {};
+    let tip = $("#unit-detail-tooltip");
+    if (!tip.length) {
+        tip = $("<div id='unit-detail-tooltip'></div>").appendTo("body");
+    }
+    let is_self = unit.owner === gameState.my_side;
+    tip.empty()
+        .removeClass("owner-self owner-enemy")
+        .addClass(is_self ? "owner-self" : "owner-enemy");
+
+    let header = $("<div class='unit-tooltip-header'></div>").appendTo(tip);
+    $("<span class='unit-tooltip-name'></span>")
+        .text(info.name || "未知单位")
+        .appendTo(header);
+    $("<span class='unit-tooltip-owner'></span>")
+        .text(is_self ? "我方" : "敌方")
+        .appendTo(header);
+
+    let meta = $("<div class='unit-tooltip-meta'></div>").appendTo(tip);
+    $("<span></span>")
+        .text(`费用 ${unit.cost ?? info.cost ?? "?"} · 行动 ${unit.actionCost}`)
+        .appendTo(meta);
+    $("<span></span>")
+        .text(`攻击 ${unit.atk} · 生命 ${unit.dfns}`)
+        .appendTo(meta);
+
+    let tags = (unit.tags || [])
+        .map((tag) => String(tag).replace(/^_/, ""))
+        .filter((tag) => tag.length > 0);
+    if (tags.length) {
+        let tag_box = $("<div class='unit-tooltip-tags'></div>").appendTo(tip);
+        tags.forEach((tag) => {
+            $("<span class='unit-tooltip-tag'></span>")
+                .text(tag)
+                .appendTo(tag_box);
+        });
+    }
+
+    let effect = (info.effect || "").trim();
+    $("<div class='unit-tooltip-effect'></div>")
+        .text(effect || "无额外效果")
+        .appendTo(tip);
+
+    tip.addClass("active");
+    let rect = element.getBoundingClientRect();
+    let width = tip.outerWidth() || 320;
+    let height = tip.outerHeight() || 160;
+    let left = rect.right + 12;
+    if (left + width > window.innerWidth - 8) {
+        left = rect.left - width - 12;
+    }
+    left = Math.max(8, Math.min(left, window.innerWidth - width - 8));
+    let top = rect.top + rect.height / 2 - height / 2;
+    top = Math.max(8, Math.min(top, window.innerHeight - height - 8));
+    tip.css({
+        left: `${left}px`,
+        top: `${top}px`
+    });
+}
+
 function cancelUnitSelection() {
     unitActionState.active = false;
     unitActionState.unit = null;
@@ -637,9 +705,22 @@ function playAttackAnimation(data) {
 }
 
 $(document).on("click", ".battle-unit", function(e) {
+    hideUnitTooltip();
     if (handleUnitClick($(this))) {
         e.stopPropagation();
     }
+});
+$(document).on("mouseenter", ".battle-unit", function() {
+    let unit = findUnitById(Number($(this).attr("data-unit-id")));
+    if (unit) {
+        showUnitTooltip(unit, this);
+    }
+});
+$(document).on("mouseleave", ".battle-unit", function() {
+    hideUnitTooltip();
+});
+$(window).on("scroll resize", function() {
+    hideUnitTooltip();
 });
 $(document).on("click", "#enemy-hq", function(e) {
     if (handleHqClick("enemy")) {
