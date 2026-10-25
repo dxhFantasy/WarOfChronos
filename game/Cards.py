@@ -408,7 +408,7 @@ allCards: list[UnitCard | CommandCard] = [
               lifespan=Lifespan.Once(),
               actions=(
                 Buff(Selection.Units(Side.FRIENDLY,
-                                     EffectUnitType.INFANTRY), 0, 1),
+                                    EffectUnitType.INFANTRY), 0, 1),
               ),
             ),
           )),
@@ -473,7 +473,7 @@ allCards: list[UnitCard | CommandCard] = [
             ),
           )),
 
-  # ================= 45 C：时间警察 =================
+  # ================= 45 C：第15机动步兵营 =================
   UnitCard(3, 7, [Tag(Keyword.Guard)], 4, 1, '第15机动步兵营', 'N',
           UnitType.infantry, C,
           '守护',
@@ -489,7 +489,7 @@ allCards: list[UnitCard | CommandCard] = [
             # ),
           )),
 
-  # ================= 46 C：未来考古学家 =================
+  # ================= 46 C：第120穿梭特遣队 =================
   UnitCard(3, 3, [Tag(Keyword.TimeWarp)], 2, 1, '第120穿梭特遣队', 'N',
           UnitType.infantry, C,
           '穿梭。部署：抽 1 张牌',
@@ -501,7 +501,7 @@ allCards: list[UnitCard | CommandCard] = [
             ),
           )),
 
-  # ================= 47 C：反熵装甲 =================
+  # ================= 47 C：强相互作用力装甲 =================
   UnitCard(6, 3,
           [PassiveTag(PT=PassiveType.TakeDamage, CT=ClacType.MLimit, value=2)],
           6, 2, '强相互作用力装甲', 'N', UnitType.tank, C,
@@ -515,7 +515,7 @@ allCards: list[UnitCard | CommandCard] = [
   UnitCard(4, 4, [Tag(Keyword.Blitz)], 4, 1, '曲率侦察舰', 'N',
           UnitType.fighter, C, '闪击'),
 
-  # ================= 50 C：时间线收束 =================
+  # ================= 50 C：技术泄露 =================
   CommandCard(3, [Tag(Keyword.TimeWarp)], '技术泄露', '', effects_=(
     Effect(
       trigger=Trigger(EventType.SELF_DEPLOYED),
@@ -547,7 +547,7 @@ allCards: list[UnitCard | CommandCard] = [
     ),
   ), dect_='所有友方单位恢复 2 点生命', tl=C),
 
-  # ================= 53 C：奇点炮 =================
+  # ================= 53 C：水滴 =================
   CommandCard(7, [], '水滴', '', effects_=(
     Effect(
       trigger=Trigger(EventType.SELF_DEPLOYED),

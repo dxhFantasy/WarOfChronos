@@ -284,6 +284,7 @@ $("#use-command-button").click(() => {
 })
 function renderUnits(units, container, my_side){
     console.log(units)
+    $("#unit-detail-tooltip").removeClass("active");
     container.empty()
     units.map((unit, unit_idx) => {
         let info = cardInfo[unit.cardId] || {
@@ -297,9 +298,8 @@ function renderUnits(units, container, my_side){
             action_class =
                 (unit.canMove || unit.canAttack) ? "can-act" : "spent"
         }
-        let tags = (unit.tags || []).join(" / ")
         let element = $(`
-            <div class="battle-unit ${owner_class} ${action_class}" data-unit-id="${unit.id}" data-owner="${unit.owner}" title="${tags}">
+            <div class="battle-unit ${owner_class} ${action_class}" data-unit-id="${unit.id}" data-owner="${unit.owner}">
                 <div class="unit-action-cost unit-cost">
                     ${unit.actionCost}
                 </div>
@@ -430,7 +430,7 @@ const jobs = {
     "🌙 moon": "美术设计",
     "箐川" : "卡牌设计",
     "庆之" : "卡牌设计",
-    "Midsummer": "忠实用户",
+    "Midsummer": "测试员",
 }
 $("#player-hand").click(function(){
     $("#hand-overlay")
