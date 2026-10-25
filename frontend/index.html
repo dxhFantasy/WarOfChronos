@@ -85,8 +85,8 @@ rel="stylesheet">
 </div>
 <div id="timeline-modal" class="room-modal">
     <div class="room-card">
-        <h2>穿梭</h2>
-        <p>选择要前往的时间线</p>
+        <h2 id="timeline-title">穿梭</h2>
+        <p id="timeline-hint">选择要前往的时间线</p>
         <div id="timeline-options"></div>
         <button id="timeline-cancel-button" class="wc-button modal-button mt-3">
             ▷ 取消
@@ -221,6 +221,9 @@ justify-content-center align-items-center">
         </div>
         <button id="end-turn-button" class="wc-button modal-button mt-3">
             结束回合
+        </button>
+        <button id="surrender-button" class="wc-button modal-button">
+            投降
         </button>
         <div id="unit-actions" class="hidden">
             <button id="unit-move-button" class="wc-button unit-action-button">移动</button>

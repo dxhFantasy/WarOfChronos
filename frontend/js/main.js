@@ -10,6 +10,8 @@ let deployState = {
     target_kind : null,
     time_warp : false,
     prepared : false,
+    pending_zone : null,
+    command_timeline : null,
 }
 let handcards = []
 let gameState = null;
@@ -95,6 +97,8 @@ function cancelDeploy() {
     deployState.target_kind = null;
     deployState.time_warp = false;
     deployState.prepared = false;
+    deployState.pending_zone = null;
+    deployState.command_timeline = null;
 
     $(".expanded-card")
         .removeClass("selected")
@@ -134,6 +138,8 @@ function enterDeploy(card_element) {
     deployState.time_warp = !!card_state.timeWarp;
     deployState.prepared = !!card_state.prepared
         || (card_state.tags || []).includes("预备");
+    deployState.pending_zone = null;
+    deployState.command_timeline = null;
     cancelUnitSelection();
     console.log(card_element.attr("data-index"))
     $(".expanded-card")
@@ -153,7 +159,7 @@ function enterDeploy(card_element) {
     } else {
         $("#player-base-units")
             .addClass("deployable");
-        if (deployState.prepared && frontlineAllowsDeploy()) {
+        if (deployState.prepared && (deployState.time_warp || frontlineAllowsDeploy())) {
             $("#frontline-units")
                 .addClass("deployable");
             showInteractionHint("预备单位：可部署到我方前线");
@@ -204,6 +210,25 @@ $(document).on("click", "#end-turn-button", function() {
         op_type: "end_turn"
     }));
 });
+$("#surrender-button").click(function() {
+    if (!gameState) {
+        return;
+    }
+    if (!window.confirm("确定要投降吗？")) {
+        return;
+    }
+    if (deployState.active) {
+        cancelDeploy();
+    }
+    resetBattleInteractions();
+    socket.send(JSON.stringify({
+        action: "player_operation",
+        op_type: "surrender"
+    }));
+    $(this)
+        .prop("disabled", true)
+        .text("已投降");
+});
 socket.onmessage = (event) => {
     let data = JSON.parse(event.data);
     console.log("Received message:", data);
@@ -246,6 +271,9 @@ socket.onmessage = (event) => {
     }
     if (data.type === "enemy_use_card") {
         play_enemy_use_card(data.card_id)
+    }
+    if (data.type === "attack_animation") {
+        playAttackAnimation(data)
     }
     if (data.type === "game_over") {
         showGameOver(data)
@@ -365,6 +393,9 @@ function enterGame() {
     $("#game").removeClass("hidden");
     $("#ready-modal").removeClass("active");
     $("#game-over-modal").removeClass("active");
+    $("#surrender-button")
+        .prop("disabled", false)
+        .text("投降");
 }
 function showGameOver(data) {
     if (deployState.active) {

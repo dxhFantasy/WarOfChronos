@@ -596,16 +596,40 @@ class Game(GamePort):
         if handCard.id != entry.actorId:
           raise Exception('手牌与指令不匹配')
         card : CommandCard = allCards[entry.actorId] # type: ignore
-        if self.currentBF not in card.timelines:
-          raise Exception('禁止出现超时空战士')
         if type(card) != CommandCard:
           raise Exception('单位不能当作指令使用 前端在干嘛')
         if playerStruct.actionPoint < handCard.cost:
           raise Exception('行动点不足')
-        targetErr = self.CheckCommandTarget(entry.actorId,player,entry.target)
-        if targetErr is not None:
-          raise Exception(targetErr)
-        self.UseCommand(playerStruct,card,entry.target)
+        isWarp = CheckTimeWarp(entry.actorId)
+        timeline = entry.timeline
+        if isWarp:
+          if timeline is None:
+            raise Exception('请选择穿梭的时间线')
+          if timeline == self.currentBF:
+            raise Exception('请选择其他时间线')
+          if self.currentBF not in card.timelines:
+            raise Exception('禁止出现超时空战士')
+        else:
+          if timeline is not None:
+            raise Exception('该指令没有穿梭')
+          if self.currentBF not in card.timelines:
+            raise Exception('禁止出现超时空战士')
+        oldBF = self.currentBF
+        warped = False
+        try:
+          # 穿梭：先切换时间线，再在新时间线里触发指令效果
+          if isWarp:
+            assert timeline is not None
+            self.TimeWarp(timeline)
+            warped = True
+          targetErr = self.CheckCommandTarget(entry.actorId,player,entry.target)
+          if targetErr is not None:
+            raise Exception(targetErr)
+          self.UseCommand(playerStruct,card,entry.target)
+        except Exception:
+          if warped:
+            self.TimeWarp(oldBF)
+          raise
         playerStruct.actionPoint -= handCard.cost
         playerStruct.handCards.pop(entry.handCardIdx)
         ...# 重点
@@ -619,39 +643,60 @@ class Game(GamePort):
         handCard = playerStruct.handCards[entry.handCardIdx]
         if handCard.id != entry.actorId:
           raise Exception('手牌与单位不匹配')
-        if(self.currentBF not in allCards[entry.actorId].timelines): # type: ignore
-          print("TEST",allCards[entry.actorId],self.currentBF) # type: ignore
-          raise Exception('禁止出现超时空战士')
-        if playerStruct.actionPoint < handCard.cost:
-          raise Exception('行动点不足')
         unitCard = allCards[entry.actorId]
         if(type(unitCard) != UnitCard):
           raise Exception('不能部署指令，啥子比。')
         assert type(unitCard) == UnitCard
+        if playerStruct.actionPoint < handCard.cost:
+          raise Exception('行动点不足')
         if entry.target is None:
           raise Exception('未选择部署阵线')
+        isWarp = CheckTimeWarp(entry.actorId)
+        timeline = entry.timeline
+        if isWarp:
+          if timeline is None:
+            raise Exception('请选择穿梭的时间线')
+          if timeline == self.currentBF:
+            raise Exception('请选择其他时间线')
+          if self.currentBF not in unitCard.timelines:
+            raise Exception('禁止出现超时空战士')
+        else:
+          if timeline is not None:
+            raise Exception('该单位没有穿梭')
+          if self.currentBF not in unitCard.timelines:
+            raise Exception('禁止出现超时空战士')
+        oldBF = self.currentBF
+        warped = False
+        try:
+          # 穿梭单位：先切换时间线，再在新时间线部署并触发部署效果
+          if isWarp:
+            assert timeline is not None
+            self.TimeWarp(timeline)
+            warped = True
+          if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
+            raise Exception('单位不能放对面家里')
+          elif (entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) is not None) or \
+                ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
+            if len(self.battlefields[self.currentBF].frontlines[entry.target].targets)\
+                >= self.battlefields[self.currentBF].frontlines[entry.target].maxTargets:
+              raise Exception('指挥阵线已满')
+            newUnit = CardToUnit(unitCard, self.currentBF)
+            newUnit.id = self.lastId + 1
+            self.lastId += 1
+            assert entry.actorPlayer in ('A', 'B')
+            newUnit.owner = entry.actorPlayer
+            newUnit.fl = entry.target
+            self.Deploy(newUnit,entry.target, entry.actorPlayer)
 
-        if ((player == 'A' and entry.target == DB) or (player == 'B' and entry.target == DA)):
-          raise Exception('单位不能放对面家里')
-        elif (entry.target == F and FindKeyw(CardToUnit(unitCard),Keyword.Prepared) is not None) or \
-              ((player == 'A' and entry.target == DA) or (player == 'B' and entry.target == DB)):
-          if len(self.battlefields[self.currentBF].frontlines[entry.target].targets)\
-              >= self.battlefields[self.currentBF].frontlines[entry.target].maxTargets:
-            raise Exception('指挥阵线已满')
-          newUnit = CardToUnit(unitCard, self.currentBF)
-          newUnit.id = self.lastId + 1
-          self.lastId += 1
-          assert entry.actorPlayer in ('A', 'B')
-          newUnit.owner = entry.actorPlayer
-          newUnit.fl = entry.target
-          self.Deploy(newUnit,entry.target, entry.actorPlayer)
-          playerStruct.actionPoint -= handCard.cost
-          playerStruct.handCards.pop(entry.handCardIdx)
-          
-
-        else: 
-          print('TEXT',player,entry.target)
-          raise Exception('不是你放单位给我放好的呀')
+          else: 
+            print('TEXT',player,entry.target)
+            raise Exception('不是你放单位给我放好的呀')
+        except Exception:
+          if warped:
+            self.TimeWarp(oldBF)
+          raise
+        playerStruct.actionPoint -= handCard.cost
+        playerStruct.handCards.pop(entry.handCardIdx)
           
       elif(eType == ActionType.TurnEnd):
         

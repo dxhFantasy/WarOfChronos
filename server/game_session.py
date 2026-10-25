@@ -96,6 +96,10 @@ class GameSession:
         op_type: str | None = data.get("op_type", None)
         card_id: int | None = None
         timeline: int | None = None
+        if op_type == "surrender":
+            winner: Literal["A", "B"] = "B" if player_side == "A" else "A"
+            await self.broadcast_game_over(winner, reason="surrender")
+            return
         if player_side == "A" and self.game.totalTurn % 2 == 0:
             await self.send_error(player_side, "当前不是你的回合")
             return
@@ -120,13 +124,29 @@ class GameSession:
             if target is None:
                 await self.send_error(player_side, "部署位置不合法")
                 return
+            card_id = handcards[card_index].id
+            timeline: int | None = None
+            if self.game.IsTimeWarpCard(card_id):
+                raw_timeline = data.get("timeline", None)
+                if raw_timeline is None:
+                    await self.send_error(player_side, "请选择穿梭的时间线")
+                    return
+                try:
+                    timeline = int(raw_timeline)
+                except (TypeError, ValueError):
+                    await self.send_error(player_side, "时间线参数不合法")
+                    return
+                if timeline not in (0, 1, 2):
+                    await self.send_error(player_side, "时间线参数不合法")
+                    return
             entry = LogEntry(
                 TurnNumber=self.game.totalTurn,
                 actorPlayer=player_side,
                 actionType=ActionType.Deploy,
-                actorId=handcards[card_index].id,
+                actorId=card_id,
                 target=target,
-                handCardIdx=card_index
+                handCardIdx=card_index,
+                timeline=timeline
             )
         elif op_type == "end_turn":
             self.game.TurnEnd(player_side)
@@ -151,6 +171,7 @@ class GameSession:
                 return
             card_id = handcards[card_index].id
             raw_timeline = data.get("timeline", None)
+            timeline: int | None = None
             if self.game.IsTimeWarpCard(card_id):
                 if raw_timeline is None:
                     await self.send_error(player_side, "请选择穿梭的时间线")
@@ -169,7 +190,8 @@ class GameSession:
                 actionType=ActionType.UseCommand,
                 actorId=card_id,
                 target=self.resolve_target(player_side, data),
-                handCardIdx=card_index
+                handCardIdx=card_index,
+                timeline=timeline
             )
         elif op_type == "move_unit":
             raw_unit_id = data.get("unit_id", None)
@@ -220,10 +242,20 @@ class GameSession:
             return
         result = self.game.ProcessRecord(entry)
         if result.state == "ok":
+            if op_type == "attack_unit" \
+                    and entry.actorId is not None and entry.target is not None:
+                await self.broadcast_message({
+                    "type": "attack_animation",
+                    "attacker_id": entry.actorId,
+                    "target_id": entry.target,
+                    "target_hq": entry.target in (HQ_A, HQ_B),
+                    "target_hq_owner": (
+                        "A" if entry.target == HQ_A
+                        else "B" if entry.target == HQ_B
+                        else None
+                    ),
+                })
             if op_type == "use_card" and card_id is not None:
-                if self.game.IsTimeWarpCard(card_id):
-                    assert timeline is not None
-                    self.game.TimeWarp(timeline)
                 await self.connections["A" if player_side == "B" else "B"].send({
                                 "type": "enemy_use_card",
                                 "card_id":card_id,
@@ -357,8 +389,13 @@ class GameSession:
         )
     async def broadcast_message(self, message: dict[str, Any]) -> None:
         await self.broadcaster(message)
-    async def broadcast_game_over(self) -> bool:
-        winner = self.game.GetWinner()
+    async def broadcast_game_over(
+        self,
+        winner: Literal["A", "B", "draw"] | None = None,
+        reason: Literal["hq", "surrender"] = "hq"
+    ) -> bool:
+        if winner is None:
+            winner = self.game.GetWinner()
         if winner is None:
             return False
         if self.status == SessionState.FINISHED:
@@ -375,11 +412,17 @@ class GameSession:
             else:
                 result = "lose"
                 message = "失败"
+            if reason == "surrender":
+                if result == "win":
+                    message = "对方投降"
+                elif result == "lose":
+                    message = "我方投降"
             await self.connections[side].send({
                 "type": "game_over",
                 "winner": winner,
                 "my_result": result,
                 "message": message,
+                "reason": reason,
             })
         return True
     async def broadcast_turn(self) -> None:
