@@ -70,7 +70,7 @@ def FindChosenSelection(node : Any) -> Selection | None:
   return None
 
 
-DEBUG = 1
+DEBUG = 0
 
 
 HQ_A = -1
