@@ -118,8 +118,8 @@ from enum import Enum
 from typing import Any, Final, Protocol, TypeAlias
 
 
-PlayerId: TypeAlias = "str"
-EntityId: TypeAlias = "str"
+PlayerId: TypeAlias = str
+EntityId: TypeAlias = str
 
 
 # ============================================================
