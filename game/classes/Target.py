@@ -78,7 +78,7 @@ def ClacAtk(tags : list[Tag] ,baseAtk : int):
       if tag.PT == PassiveType.Attack:
         assert type(tag.value) == int
         atk = Clac(tag.CT, tag.value, num=baseAtk)
-  return atk
+  return max(0, atk)
 
 def ClacHqAtk(tags : list[Tag] ,baseAtk : int) -> int:
   """攻击敌方总部时使用的攻击力修正。"""

@@ -413,6 +413,34 @@ class Game(GamePort):
             u.tags.pop(idx)
   
   
+  def ApplyUnitStats(self, u : Unit, attack : int = 0,
+                     health : int = 0, action : int = 0) -> None:
+    """统一修改单位属性，避免事件/加成把攻击或油费减成负数。"""
+    u.atk = max(0, u.atk + attack)
+    u.dfns = max(0, u.dfns + health)
+    u.actionCost = max(0, u.actionCost + action)
+
+  def AddEventStats(self, u : Unit, eid : int,
+                    attack : int = 0, health : int = 0,
+                    action : int = 0) -> None:
+    """应用事件修正，并记录实际生效的数值，保证事件关闭时可逆。"""
+    before = (u.atk, u.dfns, u.actionCost)
+    self.ApplyUnitStats(u, attack, health, action)
+    after = (u.atk, u.dfns, u.actionCost)
+    delta = (after[0] - before[0],
+             after[1] - before[1],
+             after[2] - before[2])
+    old = u.eventMods.get(eid, (0, 0, 0))
+    u.eventMods[eid] = (old[0] + delta[0],
+                        old[1] + delta[1],
+                        old[2] + delta[2])
+
+  def RemoveEventStats(self, u : Unit, eid : int) -> None:
+    delta = u.eventMods.pop(eid, None)
+    if delta is None:
+      return
+    self.ApplyUnitStats(u, -delta[0], -delta[1], -delta[2])
+
   def ChangeEvent(self,eid : Literal[0,1,2,3]) -> None:
     self.events[eid] = not self.events[eid]
     if eid == E1:
@@ -421,57 +449,47 @@ class Game(GamePort):
       if not self.events[eid]:
         for fl in self.battlefields[A].frontlines:
           for u in fl.targets:
-            u.atk += 2
-            u.dfns += 2
+            self.AddEventStats(u, eid, 2, 2)
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.atk -= 1
-            u.dfns -= 1
+            self.AddEventStats(u, eid, -1, -1)
         for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
-            u.atk -= 1
-            u.dfns -= 1
+            self.AddEventStats(u, eid, -1, -1)
       else:
         for fl in self.battlefields[A].frontlines:
           for u in fl.targets:
-            u.atk -= 2
-            u.dfns -= 2
+            self.RemoveEventStats(u, eid)
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.atk += 1
-            u.dfns += 1
+            self.RemoveEventStats(u, eid)
         for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
-            u.atk += 1
-            u.dfns += 1
+            self.RemoveEventStats(u, eid)
     elif eid == E3:
       if not self.events[eid]:
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.atk -= 1
-            u.dfns -= 1
+            self.AddEventStats(u, eid, -1, -1)
       else:
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.atk += 1
-            u.dfns += 1
+            self.RemoveEventStats(u, eid)
     elif eid == E4:
       if self.events[eid]:
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.actionCost = u.actionCost - 1 if u.actionCost >= 1 else 0
+            self.AddEventStats(u, eid, action=-1)
         for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
-            u.atk -= 3
-            u.dfns -= 2
+            self.AddEventStats(u, eid, -3, -2)
       else:
         for fl in self.battlefields[B].frontlines:
           for u in fl.targets:
-            u.actionCost += 1
+            self.RemoveEventStats(u, eid)
         for fl in self.battlefields[C].frontlines:
           for u in fl.targets:
-            u.atk += 3
-            u.dfns += 2
+            self.RemoveEventStats(u, eid)
     self.RefreshHandCosts()
 
 
@@ -510,23 +528,19 @@ class Game(GamePort):
 
     if not self.events[E2]:  # 第二次世界大战：关闭
       if u.utl == 0:
-        u.atk += 2
-        u.dfns += 2
+        self.AddEventStats(u, E2, 2, 2)
       else:
-        u.atk -= 1
-        u.dfns -= 1
+        self.AddEventStats(u, E2, -1, -1)
 
     if not self.events[E3]:  # 美苏冷战：关闭
       if u.utl == 1:
-        u.atk -= 1
-        u.dfns -= 1
+        self.AddEventStats(u, E3, -1, -1)
 
     if self.events[E4]:      # 三战：开启
       if u.utl == 1:
-        u.actionCost -= 1
+        self.AddEventStats(u, E4, action=-1)
       if u.utl == 2:
-        u.atk -= 3
-        u.dfns -= 2
+        self.AddEventStats(u, E4, -3, -2)
 
     u.owner = player
     self.battlefields[self.currentBF].frontlines[fl].targets.append(u)
@@ -1037,7 +1051,7 @@ class Game(GamePort):
       return
     if u.id in self.attackedByAction:
       return
-    #self.deployedThisTurn.remove(u.id)
+    self.deployedThisTurn.remove(u.id)
 
     #hyw
     if u.id in self.attacked:
@@ -1046,7 +1060,7 @@ class Game(GamePort):
       self.moved.remove(u.id)
 
   def GrantKeyword(self, entity: EntityId, keyword: str,
-                   ctx: EvalContext) -> None:
+                  ctx: EvalContext) -> None:
     u = self.GetUnitById(ParseUnitId(entity))
     if u is None:
       return
@@ -1150,9 +1164,9 @@ class Game(GamePort):
     if u is None:
       return
     if op == OP_ACTION_COST:
-      u.actionCost += value
+      u.actionCost = max(0, u.actionCost + value)
     elif op == OP_SET_ACTION_COST:
-      u.actionCost = value
+      u.actionCost = max(0, value)
     elif op == OP_SET_ATTACK:
       u.atk = max(0, value)
     elif op == OP_SET_HEALTH:

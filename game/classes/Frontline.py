@@ -15,6 +15,9 @@ class Unit():
   utl : Literal[0,1,2]
   owner : str
   fl : int 
+  eventMods : dict[int, tuple[int,int,int]] = field(
+      default_factory=lambda: {}
+  )
   
 
 @dataclass
