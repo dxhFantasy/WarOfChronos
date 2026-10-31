@@ -22,6 +22,7 @@ from game.game import (
 from enum import Enum
 from typing import TYPE_CHECKING, Callable, Any, Literal
 from typing import Coroutine
+import asyncio
 if TYPE_CHECKING:
     from .room import Player as PlayerConnection
 class SessionState(Enum):
@@ -32,7 +33,8 @@ class GameSession:
         self, 
         conn_a: PlayerConnection,
         conn_b: PlayerConnection,
-        broadcaster: Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
+        broadcaster: Callable[[dict[str, Any]], Coroutine[Any, Any, None]],
+        bot_side: Literal["A", "B"] | None = None
     ) -> None:
         self.connections: dict[Literal["A", "B"], PlayerConnection] = {
             "A": conn_a,
@@ -41,6 +43,8 @@ class GameSession:
         self.game: Game = Game()
         self.status: SessionState = SessionState.PLAYING
         self.broadcaster: Callable[[dict[str, Any]], Coroutine[Any, Any, None]] = broadcaster
+        self.bot_side: Literal["A", "B"] | None = bot_side
+        self.bot_task: asyncio.Task[None] | None = None
 
     async def send_error(self, player_side: Literal["A", "B"], message: str) -> None:
         await self.connections[player_side].send({
@@ -154,6 +158,7 @@ class GameSession:
             await self.broadcast_turn()
             await self.broadcast_state()
             await self.broadcast_game_over()
+            self.schedule_bot_turn()
             return
         elif op_type == "use_card":
             raw_card_index = data.get("card_index", None)
@@ -447,6 +452,28 @@ class GameSession:
         self.game.InitDraw()
         self.game.TurnStart('B')
         await self.broadcast_state()
+        self.schedule_bot_turn()
+
+    def schedule_bot_turn(self) -> None:
+        if self.bot_side is None or self.status != SessionState.PLAYING:
+            return
+        if not self.game.IsTurn(self.bot_side):
+            return
+        if self.bot_task is not None and not self.bot_task.done():
+            return
+        self.bot_task = asyncio.create_task(self._run_bot_turn())
+
+    async def _run_bot_turn(self) -> None:
+        bot_side = self.bot_side
+        if bot_side is None:
+            return
+        try:
+            from .bot import SimpleBot
+            await SimpleBot(self, bot_side).play_turn()
+        except Exception as err:
+            print(f"BOT ERROR: {err}")
+        finally:
+            self.bot_task = None
     
 if __name__ == "__main__":
     ...

@@ -65,18 +65,28 @@ async def websocket_endpoint(
             
 
             if action == "create_room":
-                room = create_room()
+                vs_ai = bool(data.get("vs_ai", False))
+                room = create_room(vs_ai)
                 await room.add_player(player)
 
                 await player.send({
                     "type": "room_created",
                     "room_id": room.room_id,
+                    "vs_ai": vs_ai,
                 })
+                if vs_ai:
+                    await room.start_game()
             elif action == "join_room":
                 room_id = data.get("room_id")
                 room = rooms.get(room_id)
 
                 if room:
+                    if room.vs_ai or room.state == "IN_PROGRESS":
+                        await player.send({
+                            "type": "error",
+                            "message":"房间不可加入"
+                        })
+                        continue
                     if room.is_full():
                         await player.send({
                             "type": "error",

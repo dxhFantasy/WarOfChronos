@@ -4,9 +4,10 @@
 from __future__ import annotations
 import random
 import asyncio
+from typing import Any, Literal, cast
+from .bot import BotConnection
 from .game_session import GameSession
 from fastapi import WebSocket
-from typing import Any, Literal
 
 rooms: dict[str, Room] = {}
 class Player:
@@ -24,16 +25,21 @@ class Room:
     '''
     房间类，管理房间内的玩家和游戏状态
     '''
-    def __init__(self, room_id: str) -> None:
+    def __init__(self, room_id: str, vs_ai: bool = False) -> None:
         self.room_id: str = room_id
         self.players: list[Player] = []
         self.state: str = "WAITING"
         self.countdown_task: asyncio.Task[None] | None = None
         self.game_session: GameSession | None = None
+        self.vs_ai: bool = vs_ai
+        self.bot: BotConnection | None = None
 
     async def add_player(self, player: Player) -> None:
         self.players.append(player)
         player.room = self
+        if self.vs_ai:
+            player.side = "A"
+            return
         if len(self.players) == 1:
             player.side = "A"
         elif len(self.players) == 2:
@@ -91,16 +97,28 @@ class Room:
     async def start_game(self) -> None:
         if self.state == "IN_PROGRESS":
             return
+        if self.vs_ai:
+            if not self.players:
+                return
+            if self.bot is None:
+                self.bot = BotConnection()
+            opponent = cast(Any, self.bot)
+        else:
+            if len(self.players) < 2:
+                return
+            opponent = self.players[1]
         self.state = "IN_PROGRESS"
 
         self.game_session = GameSession(
             self.players[0],
-            self.players[1],
-            self.broadcast
+            opponent,
+            self.broadcast,
+            bot_side="B" if self.vs_ai else None
         )
         await self.broadcast({
             "type": "game_start",
             "room_id": self.room_id,
+            "vs_ai": self.vs_ai,
         })
         await self.game_session.start_game()
 
@@ -117,11 +135,11 @@ class Room:
             await self.start_game()
         except asyncio.CancelledError:
             pass
-def create_room() -> Room:
+def create_room(vs_ai: bool = False) -> Room:
     room_id = "".join(
         str(random.choice(list(range(10))))
         for _ in range(6)
     )
 
-    rooms[room_id] = Room(room_id)
+    rooms[room_id] = Room(room_id, vs_ai)
     return rooms[room_id]

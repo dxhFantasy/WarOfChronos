@@ -52,6 +52,14 @@ $("#join-room-button").click(() => {
     showJoinRoomUI();
     $("#join-room-id").focus();
 })
+$("#ai-room-button").click(() => {
+    socket.send(
+        JSON.stringify({
+            action: "create_room",
+            vs_ai: true,
+        })
+    )
+})
 
 $("#about-button").click(() => {
     showAboutUI();
@@ -234,7 +242,9 @@ socket.onmessage = (event) => {
     console.log("Received message:", data);
     if( data.type === "room_created" ) {
         let roomId = data.room_id;
-        showRoomUI(roomId);
+        if (!data.vs_ai) {
+            showRoomUI(roomId);
+        }
     }
     if (data.type === "game_start") {
         showNotice("游戏已开始", "success");
