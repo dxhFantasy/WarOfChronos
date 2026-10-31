@@ -581,7 +581,7 @@ allCards: list[UnitCard | CommandCard] = [
     7,7,[Tag(Keyword.TimeWarp)],7,3,"IS-3",'',UnitType.tank,A,'穿梭',()
   ),
   # 57 C 647号宇宙
-  CommandCard(4, [Tag(Keyword.TimeWarp)], '647号宇宙', '', effects_=(
+  CommandCard(1, [Tag(Keyword.TimeWarp)], '647号宇宙', '', effects_=(
     
   ), dect_='穿梭', tl=C),
   # 58 B 古筝行动
