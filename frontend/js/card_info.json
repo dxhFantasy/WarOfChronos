@@ -424,7 +424,7 @@
     },
     {
         "name": "647号宇宙",
-        "cost": 4,
+        "cost": 1,
         "type": "command",
         "effect": "穿梭"
     },
