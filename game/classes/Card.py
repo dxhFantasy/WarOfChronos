@@ -64,6 +64,7 @@ class CommandCard(Card):
 class PassiveType(Enum):
   TakeDamage = '受伤'
   Attack = '造成伤害'
+  HqAttack = '攻击总部'
   N = None
 
 class ClacType(Enum):

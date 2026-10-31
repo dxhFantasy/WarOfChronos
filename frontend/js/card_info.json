@@ -139,9 +139,12 @@
     },
     {
         "name": "\"星环\"号",
+        "attack": 1,
+        "defense": 2,
+        "actionCost": 1,
         "cost": 2,
-        "type": "command",
-        "effect": "穿梭，抽 1 张牌"
+        "type": "unit",
+        "effect": "闪击，穿梭"
     },
     {
         "name": "篡改大航海",
@@ -409,5 +412,146 @@
         "cost": 4,
         "type": "command",
         "effect": "对所有前线敌方单位造成 3 点伤害"
+    },
+    {
+        "name": "IS-3",
+        "cost": 7,
+        "type": "unit",
+        "attack": 7,
+        "defense": 7,
+        "actionCost": 3,
+        "effect": "穿梭"
+    },
+    {
+        "name": "647号宇宙",
+        "cost": 4,
+        "type": "command",
+        "effect": "穿梭"
+    },
+    {
+        "name": "古筝行动",
+        "cost": 6,
+        "type": "command",
+        "effect": "使所有敌方单位防御力为 1"
+    },
+    {
+        "name": "战时动员",
+        "cost": 2,
+        "type": "command",
+        "effect": "友方总部获得 +3 防御力，获得 1 个行动点槽"
+    },
+    {
+        "name": "战时生产",
+        "cost": 3,
+        "type": "command",
+        "effect": "获得 2 个行动点槽"
+    },
+    {
+        "name": "第92机械化旅",
+        "cost": 4,
+        "type": "unit",
+        "attack": 4,
+        "defense": 4,
+        "actionCost": 1,
+        "effect": "部署：所有友方坦克获得 +1+2"
+    },
+    {
+        "name": "豹2A4",
+        "cost": 5,
+        "type": "unit",
+        "attack": 6,
+        "defense": 6,
+        "actionCost": 1,
+        "effect": ""
+    },
+    {
+        "name": "自杀无人机",
+        "cost": 3,
+        "type": "unit",
+        "attack": 7,
+        "defense": 1,
+        "actionCost": 2,
+        "effect": "闪击。攻击敌方总部时伤害 -3"
+    },
+    {
+        "name": "预备役部队",
+        "cost": 1,
+        "type": "unit",
+        "attack": 1,
+        "defense": 1,
+        "actionCost": 0,
+        "effect": "闪击。友方回合开始时获得 +1+1"
+    },
+    {
+        "name": "征兵动员",
+        "cost": 2,
+        "type": "command",
+        "effect": "将 2 张\"预备役部队\"加入手牌"
+    },
+    {
+        "name": "滚木突击队",
+        "cost": 3,
+        "type": "unit",
+        "attack": 2,
+        "defense": 2,
+        "actionCost": 1,
+        "effect": "闪击。亡计：将 2 张\"滚木\"洗入敌方卡组"
+    },
+    {
+        "name": "滚木",
+        "cost": 4,
+        "type": "command",
+        "effect": "滚木效果"
+    },
+    {
+        "name": "圣诞停火",
+        "cost": 10,
+        "type": "command",
+        "effect": "使所有单位的攻击力为 0。双方抽 10 张牌，双方总部获得 +15 防御力"
+    },
+    {
+        "name": "凛冬将至",
+        "cost": 7,
+        "type": "command",
+        "effect": "所有敌方单位获得 -2-1，所有友方单位获得 +2+2"
+    },
+    {
+        "name": "邓艾部队",
+        "cost": 2,
+        "type": "unit",
+        "attack": 3,
+        "defense": 3,
+        "actionCost": 1,
+        "effect": ""
+    },
+    {
+        "name": "陆逊",
+        "cost": 5,
+        "type": "command",
+        "effect": "对所有敌方单位造成等同于敌方单位数量的伤害"
+    },
+    {
+        "name": "虎式坦克H1型",
+        "cost": 6,
+        "type": "unit",
+        "attack": 8,
+        "defense": 8,
+        "actionCost": 3,
+        "effect": ""
+    },
+    {
+        "name": "第1装甲集团军群",
+        "cost": 12,
+        "type": "unit",
+        "attack": 9,
+        "defense": 8,
+        "actionCost": 3,
+        "effect": "友方回合开始时，将 1 张\"虎式坦克H1型\"加入手牌"
+    },
+    {
+        "name": "闪电战",
+        "cost": 2,
+        "type": "command",
+        "effect": "所有友方单位获得闪击"
     }
 ]
