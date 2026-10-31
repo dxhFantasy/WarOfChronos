@@ -8,7 +8,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pathlib import Path
-import json
+import sys
 from .room import (
     rooms,
     create_room,
@@ -20,7 +20,8 @@ app = FastAPI(
     title="WarOfChronos Server",
     version="0.1"
 )
-BASE_DIR = Path(__file__).resolve().parent.parent
+# PyInstaller onefile/onedir 下静态资源在 _MEIPASS 中；源码运行时是项目根目录
+BASE_DIR = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
 app.mount("/static", StaticFiles(directory=BASE_DIR/"frontend"), name="frontend")
 app.mount("/assets", StaticFiles(directory=BASE_DIR/"assets"), name="assets")
 #允许跨域请求
@@ -32,7 +33,7 @@ app.add_middleware(
 )
 
 # 存储所有WebSocket连接
-connections = []
+connections: list[WebSocket] = []
 
 # 首页html内容显示
 @app.get("/")
