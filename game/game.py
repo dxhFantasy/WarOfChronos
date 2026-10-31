@@ -710,7 +710,7 @@ class Game(GamePort):
           raise Exception('未选择移动位置')
         if u.id in self.attackedByAction and u.uType != UnitType.tank:
           raise Exception('本单位本回合不能移动')
-        if u.id in self.deployedThisTurn:
+        if u.id in self.deployedThisTurn and FindKeyw(u,Keyword.Blitz) is None:
           raise Exception('本单位本回合不能移动')
         agile = GetAgileCount(u)
         moveLimit = agile if agile > 0 else 1
@@ -1005,6 +1005,22 @@ class Game(GamePort):
     u.atk = max(0, u.atk + attack)
     u.dfns += health
 
+  def ClearDeploymentSicknessForBlitz(self, u: Unit) -> None:
+    """给本回合刚部署的非闪击单位贴闪击时，移除其部署当回合的行动封锁。
+    只清理“部署造成”的标记，不重置本回合已经实际移动/攻击过的单位。
+    """
+    if u.id not in self.deployedThisTurn:
+      return
+    if u.id in self.attackedByAction:
+      return
+    #self.deployedThisTurn.remove(u.id)
+
+    #hyw
+    if u.id in self.attacked:
+      self.attacked.remove(u.id)
+    if u.id in self.moved:
+      self.moved.remove(u.id)
+
   def GrantKeyword(self, entity: EntityId, keyword: str,
                    ctx: EvalContext) -> None:
     u = self.GetUnitById(ParseUnitId(entity))
@@ -1014,6 +1030,8 @@ class Game(GamePort):
       kw = Keyword(keyword)
     except ValueError:
       return
+    if kw is Keyword.Blitz:
+      self.ClearDeploymentSicknessForBlitz(u)
     idx = FindKeyw(u, kw)
     if idx is None:
       u.tags.append(Tag(kw))
