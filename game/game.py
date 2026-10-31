@@ -49,6 +49,10 @@ def GetAgileCount(u : Unit) -> int:
 def IsRangedUnit(u : Unit) -> bool:
   return u.uType in (UnitType.bomber, UnitType.artillery, UnitType.fighter)
 
+def IgnoresGuard(u : Unit) -> bool:
+  # 战斗机虽然无视距离，但不能无视守护；只有轰炸机和炮兵能越过守护。
+  return u.uType in (UnitType.bomber, UnitType.artillery)
+
 
 def FindChosenSelection(node : Any) -> Selection | None:
   '''递归找出手牌效果里用“指定”方式选择的目标选择器'''
@@ -260,9 +264,24 @@ class Game(GamePort):
 
   def HasEnemyFighter(self,fl : Frontline,player : str) -> bool:
     for u in fl.targets:
-      if u.owner != player and u.uType == UnitType.fighter:
+      if u.owner != player and u.dfns > 0 and u.uType == UnitType.fighter:
         return True
     return False
+  
+
+  def BomberIntercepted(self, u : Unit, target : int) -> bool:
+    '''轰炸机攻击由目标所在阵线的敌方战斗机拦截。'''
+    if u.uType != UnitType.bomber:
+      return False
+    bf = self.battlefields[self.currentBF]
+    if target in (HQ_A, HQ_B):
+      enemyBase = DB if u.owner == 'A' else DA
+      return self.HasEnemyFighter(bf.frontlines[enemyBase], u.owner)
+    t = self.GetUnitById(target)
+    if t is None or t.owner == u.owner:
+      return False
+    return self.HasEnemyFighter(bf.frontlines[t.fl], u.owner)
+
 
   def FrontlineHasEnemy(self,fl : Frontline,player : str) -> bool:
     '''前线是否还有敌方单位；有敌方单位时不能进入前线'''
@@ -339,7 +358,7 @@ class Game(GamePort):
             pass
           else:
             continue
-        if FindKeyw(t,Keyword.Guarded) is not None and not ranged:
+        if FindKeyw(t,Keyword.Guarded) is not None and not IgnoresGuard(u):
           continue
         if u.uType == UnitType.bomber and self.HasEnemyFighter(fl,player):
           continue
@@ -546,7 +565,7 @@ class Game(GamePort):
     if t is None:
       raise Exception('你不能攻击滚木')
     if FindKeyw(t, Keyword.Guarded) is not None:
-      if u.uType not in (UnitType.bomber, UnitType.artillery):
+      if not IgnoresGuard(u):
         raise Exception('此单位被守护')
 
     atk = ClacAtk(u.tags, u.atk)
@@ -747,6 +766,11 @@ class Game(GamePort):
         enemyHq = HQ_B if player == 'A' else HQ_A
         enemyPlayer = 'B' if player == 'A' else 'A'
         targets,canHq = self.GetAttackTargets(u,player)
+        if entry.target == enemyHq and self.BomberIntercepted(u,entry.target):
+          raise Exception('敌方战斗机拦截了轰炸机')
+        if entry.target not in (HQ_A,HQ_B) \
+            and self.BomberIntercepted(u,entry.target):
+          raise Exception('敌方战斗机拦截了轰炸机')
         if entry.target in (HQ_A,HQ_B):
           if entry.target != enemyHq:
             raise Exception('不能攻击友方总部')
@@ -759,7 +783,7 @@ class Game(GamePort):
           t = self.GetUnitById(entry.target)
           if t is None:
             raise Exception('目标不存在')
-          if FindKeyw(t,Keyword.Guarded) is not None and not IsRangedUnit(u):
+          if FindKeyw(t,Keyword.Guarded) is not None and not IgnoresGuard(u):
             raise Exception('此单位被守护')
           raise Exception('攻击距离不足')
         self.AttackUnit(u,entry.target,player)
