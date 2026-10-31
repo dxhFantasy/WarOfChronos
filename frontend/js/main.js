@@ -15,6 +15,8 @@ let deployState = {
 }
 let handcards = []
 let gameState = null;
+let gameOverTimer = null;
+let gameOverPending = false;
 async function getAuthor(){
     let cache = localStorage.getItem("authors")
     if (cache) {
@@ -398,21 +400,22 @@ function updateGameState(stateData) {
     renderBattlefield(stateData.cur_bf, stateData);
 }
 function enterGame() {
+    if (gameOverTimer !== null) {
+        clearTimeout(gameOverTimer);
+        gameOverTimer = null;
+    }
+    gameOverPending = false;
     $("#menu").addClass("hidden");
     $("#room-modal").removeClass("active");
     $("#game").removeClass("hidden");
     $("#ready-modal").removeClass("active");
     $("#game-over-modal").removeClass("active");
+    $("#end-turn-button").prop("disabled", false);
     $("#surrender-button")
         .prop("disabled", false)
         .text("投降");
 }
-function showGameOver(data) {
-    if (deployState.active) {
-        cancelDeploy();
-    }
-    resetBattleInteractions();
-    $("#hand-overlay").removeClass("active");
+function displayGameOver(data) {
     let result = data.my_result || "draw";
     let title = "平局";
     if (result === "win") {
@@ -426,6 +429,28 @@ function showGameOver(data) {
         .addClass(`game-over-${result}`);
     $("#game-over-result").text(data.message || "战斗结束");
     $("#game-over-modal").addClass("active");
+}
+function showGameOver(data) {
+    if (gameOverPending) {
+        return;
+    }
+    gameOverPending = true;
+    if (deployState.active) {
+        cancelDeploy();
+    }
+    resetBattleInteractions();
+    $("#hand-overlay").removeClass("active");
+    $("#end-turn-button, #surrender-button").prop("disabled", true);
+
+    // 投降立即结算；总部被击毁时先让玩家看到最后2.5秒的战场。
+    if (data.reason === "surrender") {
+        displayGameOver(data);
+        return;
+    }
+    gameOverTimer = setTimeout(() => {
+        gameOverTimer = null;
+        displayGameOver(data);
+    }, 2500);
 }
 $("#game-over-return-button").click(() => {
     $("#game-over-modal").removeClass("active");

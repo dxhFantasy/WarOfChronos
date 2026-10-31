@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Literal, cast
 
 from game.Cards import CommandCard, UnitCard, allCards
 from game.classes.Card import Keyword
+from game.classes.Target import UnitType
 from game.game import DA, DB, F, HQ_A, HQ_B
 
 if TYPE_CHECKING:
@@ -25,7 +26,9 @@ class BotConnection:
 
 
 class SimpleBot:
-    """Greedy bot: play on curve, trade reasonably, and attack the HQ when able."""
+    """Greedy bot with basic combat and board-development heuristics."""
+
+    ACTION_DELAY = 1.5
 
     def __init__(self, session: GameSession, side: Literal["A", "B"] = "B") -> None:
         self.session = session
@@ -69,8 +72,8 @@ class SimpleBot:
         return self._units(self._enemy_side())
 
     async def play_turn(self) -> None:
-        # Let the human client see the turn transition before the bot starts.
-        await asyncio.sleep(0.6)
+        # Let the human see the turn transition before the first action.
+        await asyncio.sleep(self.ACTION_DELAY)
         for _ in range(40):
             if not self._playing():
                 return
@@ -78,74 +81,125 @@ class SimpleBot:
             if action is None:
                 break
             await self.session.handle_action(self.side, action)
-            await asyncio.sleep(0.3)
+            await asyncio.sleep(self.ACTION_DELAY)
         if self._playing():
             await self.session.handle_action(
                 self.side, {"op_type": "end_turn"}
             )
 
     def choose_action(self) -> dict[str, Any] | None:
-        # 1. Lethal HQ attack.
-        action = self._attack_action(lethal_only=True)
+        # 1. If the combined available HQ damage is lethal, go face.
+        action = self._lethal_hq_action()
         if action is not None:
             return action
 
-        # 2. Develop the board.
+        # 2. Remove/neutralize a valuable enemy target before developing.
+        action = self._command_action(enemy_only=True)
+        if action is not None:
+            return action
+
+        # 3. Develop the board with the best available unit.
         action = self._deploy_action()
         if action is not None:
             return action
 
-        # 3. Use affordable commands (buffs/removal/draw).
-        action = self._command_action()
+        # 4. Use buffs/draw/other non-removal commands after deploying.
+        action = self._command_action(enemy_only=False)
         if action is not None:
             return action
 
-        # 4. Attack units/HQ.
+        # 5. Take good attacks/trades; avoid clear suicide attacks.
         action = self._attack_action()
         if action is not None:
             return action
 
-        # 5. Reposition toward the front.
+        # 6. Move toward the front.
         action = self._move_action()
         if action is not None:
             return action
 
         return None
 
-    def _attack_action(self, lethal_only: bool = False) -> dict[str, Any] | None:
+    def _hq_damage_available(self) -> list[Any]:
+        result: list[Any] = []
+        for unit in self._own_units():
+            _, can_hq = self.game.GetAttackTargets(unit, self.side)
+            if can_hq:
+                result.append(unit)
+        return result
+
+    def _lethal_hq_action(self) -> dict[str, Any] | None:
         enemy_player = self.game.GetPlayer(self._enemy_side())
         if enemy_player is None:
             return None
-        enemy_hq = enemy_player.hq
+        units = self._hq_damage_available()
+        total = sum(max(0, u.atk) for u in units)
+        if total < enemy_player.hq or not units:
+            return None
+        unit = max(units, key=lambda u: u.atk)
+        return {
+            "op_type": "attack_unit",
+            "unit_id": unit.id,
+            "target_hq": True,
+        }
 
+    def _counter_damage(self, unit: Any, target: Any) -> int:
+        if target.uType == UnitType.bomber:
+            return 0
+        if unit.uType in (UnitType.bomber, UnitType.artillery):
+            return 0
+        return max(0, target.atk)
+
+    def _score_attack(self, unit: Any, target: Any) -> float:
+        atk = max(0, unit.atk)
+        target_hp = max(0, target.dfns)
+        kills = atk >= target_hp
+        counter = self._counter_damage(unit, target)
+        dies = counter >= unit.dfns and counter > 0
+        # Trading into a high-attack target is good; dying without a kill is bad.
+        score = float(target.atk) * 2.0
+        if kills:
+            score += 25.0
+        if dies:
+            score -= 14.0
+        if kills and dies:
+            score += 8.0
+        if target.uType == UnitType.fighter:
+            score += 4.0
+        return score
+
+    def _attack_action(self) -> dict[str, Any] | None:
+        best_score = -1e9
+        best_action: dict[str, Any] | None = None
         for unit in self._own_units():
             targets, can_hq = self.game.GetAttackTargets(unit, self.side)
-            if can_hq and enemy_hq <= unit.atk:
-                return {
-                    "op_type": "attack_unit",
-                    "unit_id": unit.id,
-                    "target_hq": True,
-                }
-            if lethal_only:
-                continue
-            if targets:
-                target = min(
-                    (self.game.GetUnitById(tid) for tid in targets),
-                    key=lambda t: (t.dfns if t is not None else 999, -(t.atk if t is not None else 0)),
-                )
-                if target is not None:
-                    return {
+            for target_id in targets:
+                target = self.game.GetUnitById(target_id)
+                if target is None:
+                    continue
+                score = self._score_attack(unit, target)
+                counter = self._counter_damage(unit, target)
+                # Do not throw a unit away into a surviving target for nothing.
+                if unit.atk < target.dfns and counter >= unit.dfns:
+                    continue
+                if score > best_score:
+                    best_score = score
+                    best_action = {
                         "op_type": "attack_unit",
                         "unit_id": unit.id,
                         "target_id": target.id,
                     }
             if can_hq:
-                return {
-                    "op_type": "attack_unit",
-                    "unit_id": unit.id,
-                    "target_hq": True,
-                }
-        return None
+                # A safe HQ hit is a useful fallback when no good trade exists.
+                hq_score = 8.0
+                if hq_score > best_score and not targets:
+                    best_score = hq_score
+                    best_action = {
+                        "op_type": "attack_unit",
+                        "unit_id": unit.id,
+                        "target_hq": True,
+                    }
+        return best_action
 
     def _deploy_target(self, card: UnitCard, timeline: int) -> str | None:
         bf = self.game.battlefields[timeline]
@@ -164,6 +218,8 @@ class SimpleBot:
     def _deploy_action(self) -> dict[str, Any] | None:
         player = self._player()
         current = self.game.currentBF
+        best_score = -1e9
+        best_action: dict[str, Any] | None = None
         for index, handcard in enumerate(player.handCards):
             card = cast(UnitCard | CommandCard, allCards[handcard.id])
             if not isinstance(card, UnitCard):
@@ -179,15 +235,23 @@ class SimpleBot:
                 target = self._deploy_target(card, timeline)
                 if target is None:
                     continue
-                action: dict[str, Any] = {
-                    "op_type": "deploy_unit",
-                    "card_index": index,
-                    "target": target,
-                }
+                # Prefer efficient bodies, with a small bonus for prepared units.
+                score = float(card.attack + card.defense) - handcard.cost * 0.5
+                if any(tag.keyword is Keyword.Prepared for tag in card.tags):
+                    score += 1.0
                 if timeline != current:
-                    action["timeline"] = timeline
-                return action
-        return None
+                    score += 0.5
+                if score > best_score:
+                    best_score = score
+                    action: dict[str, Any] = {
+                        "op_type": "deploy_unit",
+                        "card_index": index,
+                        "target": target,
+                    }
+                    if timeline != current:
+                        action["timeline"] = timeline
+                    best_action = action
+        return best_action
 
     def _command_target_candidates(self, card_id: int) -> list[int]:
         kind = self.game.GetTargetKind(card_id)
@@ -222,9 +286,17 @@ class SimpleBot:
                 return target
         return None
 
-    def _command_action(self) -> dict[str, Any] | None:
+    def _is_enemy_target(self, card_id: int) -> bool:
+        kind = self.game.GetTargetKind(card_id)
+        if kind is None:
+            return False
+        return kind.split("_", 1)[0] in ("enemy", "any")
+
+    def _command_action(self, enemy_only: bool) -> dict[str, Any] | None:
         player = self._player()
         current = self.game.currentBF
+        best_score = -1e9
+        best_action: dict[str, Any] | None = None
         for index, handcard in enumerate(player.handCards):
             card = cast(UnitCard | CommandCard, allCards[handcard.id])
             if not isinstance(card, CommandCard):
@@ -236,6 +308,8 @@ class SimpleBot:
             if current not in card.timelines:
                 continue
             has_target = self.game.GetTargetKind(handcard.id) is not None
+            if self._is_enemy_target(handcard.id) != enemy_only:
+                continue
             timelines = [current]
             if self.game.IsTimeWarpCard(handcard.id):
                 # A targeted warp would need target selection in the new
@@ -247,23 +321,40 @@ class SimpleBot:
                 target = self._choose_command_target(handcard.id)
                 if has_target and target is None:
                     continue
-                action: dict[str, Any] = {
-                    "op_type": "use_card",
-                    "card_index": index,
-                }
+                score = 5.0
                 if target is not None:
-                    action["target_id"] = target
+                    selected = self.game.GetUnitById(target)
+                    if selected is not None:
+                        score = selected.atk * 2.0 + (10.0 if enemy_only else 2.0)
+                    elif enemy_only:
+                        score = 18.0
                 if timeline != current:
-                    action["timeline"] = timeline
-                return action
-        return None
+                    score += 0.5
+                if score > best_score:
+                    best_score = score
+                    action: dict[str, Any] = {
+                        "op_type": "use_card",
+                        "card_index": index,
+                    }
+                    if target is not None:
+                        action["target_id"] = target
+                    if timeline != current:
+                        action["timeline"] = timeline
+                    best_action = action
+        return best_action
 
     def _move_action(self) -> dict[str, Any] | None:
-        for unit in self._own_units():
+        for unit in sorted(self._own_units(), key=lambda u: (-u.atk, -u.dfns)):
             targets = self.game.GetMoveTargets(unit, self.side)
             if not targets:
                 continue
-            target = F if F in targets else targets[0]
+            if F in targets:
+                target = F
+            elif unit.fl == F and unit.dfns <= 2 and self._own_base() in targets:
+                # Retreat a wounded frontline unit only if it is cheap to do so.
+                target = self._own_base()
+            else:
+                continue
             return {
                 "op_type": "move_unit",
                 "unit_id": unit.id,
