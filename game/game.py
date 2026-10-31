@@ -69,8 +69,7 @@ def FindChosenSelection(node : Any) -> Selection | None:
         return found
   return None
 
-
-DEBUG = 0
+from .Constants import *
 
 
 HQ_A = -1
@@ -538,7 +537,7 @@ class Game(GamePort):
       if self.HqIsGuarded(hqOwner) \
           and u.uType not in (UnitType.bomber, UnitType.artillery):
         raise Exception('敌方总部被守护')
-      atk = ClacAtk(u.tags, u.atk)
+      atk = ClacHqAtk(u.tags, u.atk)
       target = HqRef('A') if tid == HQ_A else HqRef('B')
       self.effectInterp.port.DealDamage(UnitRef(u.id), target, atk, ctx)
       return
@@ -1099,6 +1098,9 @@ class Game(GamePort):
         player.actionPoint += value
       elif op == OP_AP_SLOT:
         player.apSlot += value
+      elif op == OP_SHUFFLE:
+        player.deck.append(value)
+        random.shuffle(player.deck)
       return
 
     # ---- 指向单位 ----
@@ -1113,6 +1115,7 @@ class Game(GamePort):
       u.atk = max(0, value)
     elif op == OP_SET_HEALTH:
       u.dfns = value
+    
 
 
 
