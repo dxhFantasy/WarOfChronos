@@ -2,3 +2,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 .vscode/
+
+# PyInstaller build artifacts
+build/
+dist/
+*.spec
