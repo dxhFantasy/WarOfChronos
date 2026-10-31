@@ -1,17 +1,20 @@
 # -*- coding: utf-8 -*-
 from .classes.Target import *
+from .Constants import *
 from .classes.Card import PassiveTag, PassiveType, ClacType, Tag, Keyword
 from .classes.CommandEffect import (
-    Buff, CustomAction, DealDamage, DrawCards, Effect, EndPoint, EventType,
-    ForEach, Heal, Lifespan, PlayEffect, Selection, Side, StartPoint, Trigger,
-    Pick, Zone, UnitType as EffectUnitType,
+    Buff, CountValue, CustomAction, DealDamage, DrawCards, Effect, EndPoint,
+    EventType, ForEach, GrantKeyword, Heal, Lifespan, PlayEffect, Selection,
+    Side, StartPoint, Trigger, Pick, Zone, UnitType as EffectUnitType,
 )
-# 下划线别名：不会被 `from .Cards import *` 转发，避免 Final 重分配报错
+
 from .classes.CommandEffect import (
     OP_ACTION_COST as _OP_ACTION_COST,
+    OP_ADD_TO_HAND as _OP_ADD_TO_HAND,
     OP_AP_SLOT as _OP_AP_SLOT,
     OP_CHANGE_EVENT as _OP_CHANGE_EVENT,
     OP_SET_ATTACK as _OP_SET_ATTACK,
+    OP_SET_HEALTH as _OP_SET_HEALTH,
     OP_SHUFFLE as _OP_SHUFFLE,
     OP_TO_TOP as _OP_TO_TOP,
 )
@@ -196,13 +199,8 @@ allCards: list[UnitCard | CommandCard] = [
   ), dect_='穿梭，抽 1 张牌', tl=B),
 
   # ================= 19 调试：C 时间段穿梭 =================
-  CommandCard(2, [Tag(Keyword.TimeWarp)], '"星环"号', '', effects_=(
-    Effect(
-      trigger=Trigger(EventType.SELF_DEPLOYED),
-      lifespan=Lifespan.Once(),
-      actions=(DrawCards(Side.FRIENDLY, 1),),
-    ),
-  ), dect_='穿梭，抽 1 张牌', tl=C),
+  UnitCard(1,2, [Tag(Keyword.TimeWarp),Tag(Keyword.Blitz)], 2, 1, '"星环"号', '', 
+          UnitType.fighter, C, dect_='穿梭，抽 1 张牌'),
 
   # ================= 20 调试：大航海开关 =================
   CommandCard(1, [], '篡改大航海', '', effects_=(
@@ -578,6 +576,222 @@ allCards: list[UnitCard | CommandCard] = [
       ),
     ),
   ), dect_='对所有前线敌方单位造成 3 点伤害', tl=C),
+  # ================= 56 A: IS-3
+  UnitCard(
+    7,7,[Tag(Keyword.TimeWarp)],7,3,"IS-3",'',UnitType.tank,A,'穿梭',()
+  ),
+  # 57 C 647号宇宙
+  CommandCard(4, [Tag(Keyword.TimeWarp)], '647号宇宙', '', effects_=(
+    
+  ), dect_='穿梭', tl=C),
+  # 58 B 古筝行动
+  CommandCard(
+    6, [], '古筝行动', '',
+    effects_=(
+      Effect(
+        trigger=Trigger(EventType.SELF_DEPLOYED),
+        lifespan=Lifespan.Once(),
+        actions=(
+          CustomAction(_OP_SET_HEALTH, Selection.Units(Side.ENEMY), {'值': 1}),
+        ),
+      ),
+    ),
+    dect_='使所有敌方单位防御力变为 1',
+    tl=B,
+  ) ,
+  # ================= 59 A 战时动员
+  CommandCard(
+    2, [], '战时动员', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          Heal(Selection.HQ(Side.FRIENDLY), 3),
+          CustomAction(_OP_AP_SLOT, None, {'值': 1}),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='友方总部获得 +3 防御力，获得 1 个行动点槽',
+    tl=[A,B,C]
+  ),
+  # ================= 60 ABC 战时生产
+  CommandCard(
+    3, [], '战时生产', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          CustomAction(_OP_AP_SLOT, None, {'值': 2}),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='获得 2 个行动点槽',
+    tl=[A, B, C]
+  ),
+  # ================= 61 B 第92机械化旅
+  UnitCard(
+    4, 4, [], 4, 1, '第92机械化旅', 'N', UnitType.infantry, B,
+    '部署：所有友方坦克获得 +1+2',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          Buff(Selection.Units(Side.FRIENDLY, EffectUnitType.TANK), 1, 2),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    )
+  ),
+  # ================= 62 B 豹2A4
+  UnitCard(6, 6, [], 5, 1, '豹2A4', 'N', UnitType.tank, B, ''),
+  # ================= 63 B 自杀无人机
+  UnitCard(
+    7, 1,
+    [
+      Tag(Keyword.Blitz),
+      PassiveTag(PT=PassiveType.HqAttack, CT=ClacType.Sub, value=3),
+    ],
+    3, 2, '自杀无人机', 'N', UnitType.fighter, B,
+    '闪击。攻击敌方总部时伤害 -3'
+  ),
+  # ================= 64 AB 预备役部队
+  UnitCard(
+    1, 1, [Tag(Keyword.Blitz)], 1, 0, '预备役部队', 'N',
+    UnitType.infantry, [A, B],
+    '闪击。友方回合开始时获得 +1+1',
+    effects_=(
+      Effect(
+        Trigger(EventType.TURN_STARTED, side=Side.FRIENDLY, oncePerTurn=True),
+        actions=(
+          Buff(Selection.Self(), 1, 1),
+        ),
+        lifespan=Lifespan()
+      ),
+    )
+  ),
+  # ================= 65 B 征兵动员
+  CommandCard(
+    2, [], '征兵动员', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          CustomAction(_OP_ADD_TO_HAND, None, {'值': 64}),
+          CustomAction(_OP_ADD_TO_HAND, None, {'值': 64}),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='将 2 张"预备役部队"加入手牌',
+    tl=B
+  ),
+  # ================= 66 B 滚木突击队
+  UnitCard(
+    2, 2, [Tag(Keyword.Blitz), Tag(Keyword.Deathrattle)], 3, 1,
+    '滚木突击队', 'N', UnitType.infantry, B,
+    '闪击。亡计：将 2 张"滚木"洗入敌方卡组',
+    effects_=(
+      Effect(
+        Trigger(EventType.UNIT_DESTROYED, subjectMatches=Selection.Self()),
+        actions=(
+          CustomAction(_OP_SHUFFLE, Selection.HQ(Side.ENEMY), {'值': 67}),
+          CustomAction(_OP_SHUFFLE, Selection.HQ(Side.ENEMY), {'值': 67}),
+        ),
+        lifespan=Lifespan()
+      ),
+    )
+  ),
+  # ================= 67 B 滚木（衍生牌）
+  CommandCard(4, [], '滚木', '', effects_=(), dect_='', tl=B),
+  # ================= 68 A 圣诞停火
+  CommandCard(
+    10, [], '圣诞停火', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          CustomAction(_OP_SET_ATTACK, Selection.Units(Side.ANY), {'值': 0}),
+          DrawCards(Side.FRIENDLY, 10),
+          DrawCards(Side.ENEMY, 10),
+          Heal(Selection.HQ(Side.FRIENDLY), 15),
+          Heal(Selection.HQ(Side.ENEMY), 15),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='将所有单位的攻击力变为 0。双方各抽 10 张牌，双方总部恢复 15 点生命',
+    tl=A
+  ),
+  # ================= 69 A 凛冬将至
+  CommandCard(
+    7, [], '凛冬将至', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          Buff(Selection.Units(Side.ENEMY), -2, -1),
+          Buff(Selection.Units(Side.FRIENDLY), 2, 2),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='所有敌方单位获得 -2-1，所有友方单位获得 +2+2',
+    tl=A
+  ),
+  # ================= 70 A 邓艾部队
+  UnitCard(3, 3, [], 2, 1, '邓艾部队', 'N', UnitType.infantry, A, ''),
+  # ================= 71 A 陆逊
+  CommandCard(
+    5, [], '陆逊', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          DealDamage(
+            Selection.Units(Side.ENEMY),
+            CountValue(Selection.Units(Side.ENEMY))
+          ),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='对所有敌方单位造成等同于敌方单位数量的伤害',
+    tl=A
+  ),
+  # ================= 72 A 虎式坦克H1型
+  UnitCard(8, 8, [], 6, 3, '虎式坦克H1型', 'N', UnitType.tank, A, ''),
+  # ================= 73 A 第1装甲集团军群
+  UnitCard(
+    9, 10, [], 12, 3, '第1装甲集团军群', 'N', UnitType.infantry, A,
+    '友方回合开始时，将 1 张"虎式坦克H1型"加入手牌',
+    effects_=(
+      Effect(
+        Trigger(EventType.TURN_STARTED, side=Side.FRIENDLY, oncePerTurn=True),
+        actions=(
+          CustomAction(_OP_ADD_TO_HAND, None, {'值': 72}),
+        ),
+        lifespan=Lifespan()
+      ),
+    )
+  ),
+  # ================= 74 AB 闪电战
+  CommandCard(
+    2, [], '闪电战', '',
+    effects_=(
+      Effect(
+        Trigger(EventType.SELF_DEPLOYED),
+        actions=(
+          GrantKeyword(Selection.Units(Side.FRIENDLY), Keyword.Blitz.value),
+        ),
+        lifespan=Lifespan.Once()
+      ),
+    ),
+    dect_='所有友方单位获得闪击',
+    tl=[A, B]
+  )
+  
 ]
 def RemoveCard(cardIdx : int):
   cardIds.remove(cardIdx)
@@ -588,9 +802,13 @@ cardIds = list(range(len(allCards)))
 
 
 RemoveCard(15)# 经济危机为衍生牌
-# RemoveCard(1)
+RemoveCard(67)# 滚木为衍生牌
 
-cardIds *= 2
+if not DEBUG:
+  RemoveCard(68)
+if DEBUG:
+  cardIds *= 2
+
 random.shuffle(cardIds)
 
 @dataclass
