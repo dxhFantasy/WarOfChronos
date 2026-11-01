@@ -287,6 +287,9 @@ socket.onmessage = (event) => {
     if (data.type === "attack_animation") {
         playAttackAnimation(data)
     }
+    if (data.type === "unit_death") {
+        showUnitDeaths(data.units)
+    }
     if (data.type === "game_over") {
         showGameOver(data)
     }
@@ -336,6 +339,79 @@ function renderUnits(units, container, my_side){
 
         container.append(element)
     })
+}
+function createDeathGhost(unit) {
+    let temp = $("<div></div>").appendTo("body");
+    let unit_data = Object.assign({}, unit, {
+        canMove: false,
+        canAttack: false,
+    });
+    renderUnits([unit_data], temp, gameState.my_side);
+    let ghost = temp.children(".battle-unit").first();
+    temp.remove();
+    return ghost;
+}
+function showUnitDeaths(units) {
+    if (!Array.isArray(units) || !gameState) {
+        return;
+    }
+    units.forEach((unit) => {
+        if (!unit || unit.timeline !== gameState.cur_bf) {
+            return;
+        }
+        let existing = $(`.battle-unit[data-unit-id="${unit.id}"]`);
+        let ghost = createDeathGhost(unit);
+        let left;
+        let top;
+        let width;
+        let height;
+
+        if (existing.length) {
+            let rect = existing[0].getBoundingClientRect();
+            left = rect.left;
+            top = rect.top;
+            width = rect.width;
+            height = rect.height;
+            // The real element will be removed by the following state update;
+            // hide it so only the 1s ghost remains visible.
+            existing.css("visibility", "hidden");
+        } else {
+            let rel = gameState.my_side === "A" ? unit.fl : 2 - unit.fl;
+            let container = $([
+                "#player-base-units",
+                "#frontline-units",
+                "#enemy-base-units",
+            ][rel] || "#frontline-units");
+            if (!container.length) {
+                return;
+            }
+            let rect = container[0].getBoundingClientRect();
+            width = 120;
+            height = 160;
+            left = rect.left + rect.width / 2 - width / 2;
+            top = rect.top + rect.height / 2 - height / 2;
+        }
+
+        if (!ghost || !ghost.length) {
+            return;
+        }
+        ghost
+            .removeAttr("data-unit-id")
+            .removeClass("selected targetable attack-source attack-target")
+            .addClass("unit-dying")
+            .css({
+                position: "fixed",
+                left: `${left}px`,
+                top: `${top}px`,
+                width: `${width}px`,
+                height: `${height}px`,
+                margin: 0,
+                zIndex: 4500,
+                pointerEvents: "none",
+            });
+        $("body").append(ghost);
+        setTimeout(() => ghost.remove(), 1000);
+    });
 }
 function renderBattlefield(cur_bf, stateData) {
     if (!stateData || !stateData.battlefields) {

@@ -169,6 +169,7 @@ class Game(GamePort):
     self.currentBF : Literal[0,1,2] = 1
 
     self.events : list[bool] = [True,True,True,False]
+    self.deathSnapshots: list[dict[str, Any]] = []
 
     random.shuffle(self.playerA.deck)
     random.shuffle(self.playerB.deck)
@@ -815,10 +816,21 @@ class Game(GamePort):
     return result
 
   def Check(self) -> None:
-    for bf in self.battlefields:
+    for bf_idx, bf in enumerate(self.battlefields):
       for fl in bf.frontlines:
         for u in list(fl.targets):
           if(u.dfns <= 0):
+            self.deathSnapshots.append({
+              "id": u.id,
+              "cardId": u.cardId,
+              "atk": u.atk,
+              "dfns": u.dfns,
+              "actionCost": u.actionCost,
+              "tags": [t.keyword.value for t in u.tags],
+              "owner": u.owner,
+              "fl": u.fl,
+              "timeline": bf_idx,
+            })
             ref = UnitRef(u.id)
             self.effectInterp.HandleEvent(
               GameEvent(EventType.UNIT_DESTROYED, actor=u.owner, subject=ref))
@@ -826,6 +838,11 @@ class Game(GamePort):
             fl.targets.pop(fl.targets.index(u))
       bf.unitsNum = sum(len(fl.targets) for fl in bf.frontlines)
     self.RefreshGuarded()
+
+  def TakeDeathSnapshots(self) -> list[dict[str, Any]]:
+    snapshots = self.deathSnapshots
+    self.deathSnapshots = []
+    return snapshots
 
 
   def GetState(self) -> GameState:

@@ -386,6 +386,12 @@ class GameSession:
         return state_dict
     async def broadcast_state(self) -> None:
         state = self.game.GetState()
+        deaths = self.game.TakeDeathSnapshots()
+        if deaths:
+            await self.broadcast_message({
+                "type": "unit_death",
+                "units": deaths,
+            })
         await self.connections["A"].send(
             self.state_jsonify(state, "A")
         )
