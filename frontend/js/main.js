@@ -1,6 +1,84 @@
-let socket = new WebSocket(
-    `ws://${window.location.host}/ws`
-);
+let socket = null;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+let manualSocketClose = false;
+
+let fallbackClientId = null;
+function getClientId() {
+    try {
+        // 每个标签页独立保存连接 ID；localStorage 会让两个标签页
+        // 共用同一个 ID，互相把对方的 WebSocket 顶掉。
+        let id = sessionStorage.getItem("woc_client_id");
+        if (!id) {
+            id = (window.crypto && window.crypto.randomUUID)
+                ? window.crypto.randomUUID()
+                : `woc-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+            sessionStorage.setItem("woc_client_id", id);
+        }
+        return id;
+    } catch (_) {
+        if (fallbackClientId === null) {
+            fallbackClientId = `woc-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+        }
+        return fallbackClientId;
+    }
+}
+const CLIENT_ID = getClientId();
+
+function connectSocket() {
+    if (socket && (socket.readyState === WebSocket.OPEN
+            || socket.readyState === WebSocket.CONNECTING)) {
+        return;
+    }
+    const protocol = window.location.protocol === "https:" ? "wss" : "ws";
+    const current = new WebSocket(
+        `${protocol}://${window.location.host}/ws?client_id=${encodeURIComponent(CLIENT_ID)}`
+    );
+    socket = current;
+    current.onopen = () => {
+        if (socket !== current) {
+            return;
+        }
+        reconnectAttempts = 0;
+        showNotice("已连接服务器", "success");
+    };
+    current.onmessage = handleSocketMessage;
+    current.onclose = () => {
+        if (socket !== current || manualSocketClose) {
+            return;
+        }
+        scheduleReconnect();
+    };
+    current.onerror = () => {
+        // onclose will handle the retry.
+    };
+}
+
+function scheduleReconnect() {
+    if (manualSocketClose || reconnectTimer !== null) {
+        return;
+    }
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts), 10000);
+    reconnectAttempts += 1;
+    showNotice("连接断开，正在尝试重连…", "warning");
+    reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectSocket();
+    }, delay);
+}
+function safeSocketSend(payload) {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+        socket.send(payload);
+    } else {
+        showNotice("连接中，请稍候…", "warning");
+    }
+}
+window.addEventListener("beforeunload", () => {
+    manualSocketClose = true;
+    if (socket) {
+        socket.close();
+    }
+});
 const authorList = ["dxhFantasy", "lwjyreq"]
 let authorCache = new Array();
 let deployState = {
@@ -43,7 +121,7 @@ async function getAuthor(){
 }
 
 $("#start-room-button").click(() => {
-    socket.send(
+    safeSocketSend(
         JSON.stringify({
             action: "create_room",
         })
@@ -55,7 +133,7 @@ $("#join-room-button").click(() => {
     $("#join-room-id").focus();
 })
 $("#ai-room-button").click(() => {
-    socket.send(
+    safeSocketSend(
         JSON.stringify({
             action: "create_room",
             vs_ai: true,
@@ -72,7 +150,7 @@ $("#join-room-confirm-button").click(() => {
         showNotice("请输入房间号", "warning");
         return;
     }
-    socket.send(
+    safeSocketSend(
         JSON.stringify({
             action: "join_room",
             room_id: roomId,
@@ -87,7 +165,7 @@ $("#return-menu-button").click(() => {
     $("#game").addClass("hidden");
 });
 $("#ready-button").click(() => {
-    socket.send(
+    safeSocketSend(
         JSON.stringify({
             action: "ready",
         })
@@ -215,7 +293,7 @@ $(document).on("click", "#end-turn-button", function() {
         return;
     }
     cancelUnitSelection();
-    socket.send(JSON.stringify({
+    safeSocketSend(JSON.stringify({
         action: "player_operation",
         op_type: "end_turn"
     }));
@@ -231,7 +309,7 @@ $("#surrender-button").click(function() {
         cancelDeploy();
     }
     resetBattleInteractions();
-    socket.send(JSON.stringify({
+    safeSocketSend(JSON.stringify({
         action: "player_operation",
         op_type: "surrender"
     }));
@@ -239,9 +317,24 @@ $("#surrender-button").click(function() {
         .prop("disabled", true)
         .text("已投降");
 });
-socket.onmessage = (event) => {
+function handleSocketMessage(event) {
     let data = JSON.parse(event.data);
     console.log("Received message:", data);
+    if (data.type === "ping") {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+            safeSocketSend(JSON.stringify({ action: "pong" }));
+        }
+        return;
+    }
+    if (data.type === "reconnected") {
+        showNotice("已重新连接", "success");
+        if (data.in_game) {
+            enterGame();
+        } else if (data.room_id) {
+            showRoomUI(data.room_id);
+        }
+        return;
+    }
     if( data.type === "room_created" ) {
         let roomId = data.room_id;
         if (!data.vs_ai) {
@@ -252,6 +345,12 @@ socket.onmessage = (event) => {
         showNotice("游戏已开始", "success");
 
         enterGame()
+    }
+    if (data.type === "opponent_disconnected") {
+        showNotice(`对方掉线，等待重连…`, "warning");
+    }
+    if (data.type === "opponent_reconnected") {
+        showNotice("对方已重新连接", "success");
     }
     if (data.type === "opponent_left")  {
         showExitRoomUI();
@@ -621,5 +720,7 @@ $(document).ready(() => {
         拉取作者信息失败`
         $("#author-list").append(authorItem);
     })
-    loadCardInfo()
+    loadCardInfo().finally(() => {
+        connectSocket()
+    })
 })

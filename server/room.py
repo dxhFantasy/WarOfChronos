@@ -14,13 +14,21 @@ class Player:
     """
     将 websocket 封装为 Player 对象，便于管理玩家状态和发送消息
     """
-    def __init__(self, websocket: WebSocket) -> None:
+    def __init__(self, websocket: WebSocket, client_id: str) -> None:
         self.websocket: WebSocket = websocket
+        self.client_id: str = client_id
         self.ready: bool = False
+        self.connected: bool = True
         self.room: Room | None = None
         self.side: Literal["A", "B"] | None = None  # 玩家在房间中的位置，"A" 或 "B"
+        self.disconnect_task: asyncio.Task[None] | None = None
     async def send(self, data: dict[str, Any]) -> None:
-        await self.websocket.send_json(data)
+        if not self.connected:
+            return
+        try:
+            await self.websocket.send_json(data)
+        except Exception:
+            self.connected = False
 class Room:
     '''
     房间类，管理房间内的玩家和游戏状态
@@ -63,10 +71,50 @@ class Room:
 
     async def broadcast(self, data: dict[str, Any]) -> None:
         for player in self.players:
+            if not player.connected:
+                continue
             try:
                 await player.send(data)
             except Exception as e:
                 print(f"Error sending message to player: {e}")
+
+    async def player_disconnected(self, player: Player) -> None:
+        if player not in self.players:
+            return
+        player.connected = False
+        await self.broadcast({
+            "type": "opponent_disconnected",
+            "reconnect_seconds": 30,
+        })
+        if player.disconnect_task is not None:
+            player.disconnect_task.cancel()
+        player.disconnect_task = asyncio.create_task(
+            self.disconnect_timeout(player)
+        )
+
+    async def player_reconnected(self, player: Player) -> None:
+        if player not in self.players:
+            return
+        player.connected = True
+        if player.disconnect_task is not None:
+            player.disconnect_task.cancel()
+            player.disconnect_task = None
+        await self.broadcast({
+            "type": "opponent_reconnected",
+        })
+
+    async def disconnect_timeout(self, player: Player) -> None:
+        try:
+            await asyncio.sleep(30)
+            if player.connected or player not in self.players:
+                return
+            self.players.remove(player)
+            player.room = None
+            await self.broadcast({
+                "type": "opponent_left",
+            })
+        except asyncio.CancelledError:
+            pass
 
     async def check_ready(self) -> None:
         if not self.is_full():

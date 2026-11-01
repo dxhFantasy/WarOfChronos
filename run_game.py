@@ -25,7 +25,14 @@ def main() -> None:
     print(f"局域网访问: http://<本机局域网IP>:{args.port}/")
     if getattr(sys, "frozen", False) and not args.no_browser:
         threading.Timer(1.5, webbrowser.open, args=(url,)).start()
-    uvicorn.run(app, host=args.host, port=args.port, log_level="info")
+    uvicorn.run(
+        app,
+        host=args.host,
+        port=args.port,
+        log_level="info",
+        ws_ping_interval=20,
+        ws_ping_timeout=20,
+    )
 
 
 if __name__ == "__main__":
