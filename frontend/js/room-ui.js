@@ -42,7 +42,7 @@ $("#room-id").click(() => {
     });
 });
 $("#ready-button").click(() => {
-    socket.send(JSON.stringify({
+    safeSocketSend(JSON.stringify({
         action:"ready"
     }));
 

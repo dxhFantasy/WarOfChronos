@@ -266,7 +266,7 @@ function sendUnitMove(zone) {
     if (!unit) {
         return;
     }
-    socket.send(JSON.stringify({
+    safeSocketSend(JSON.stringify({
         action: "player_operation",
         op_type: "move_unit",
         unit_id: unit.id,
@@ -291,7 +291,7 @@ function sendUnitAttack(target) {
     } else {
         payload.target_id = target.target_id;
     }
-    socket.send(JSON.stringify(payload));
+    safeSocketSend(JSON.stringify(payload));
     cancelUnitSelection();
     $("#hand-overlay").removeClass("active");
 }
@@ -397,7 +397,7 @@ function sendDeploy(zone, timeline) {
     if (timeline !== null && timeline !== undefined) {
         payload.timeline = timeline;
     }
-    socket.send(JSON.stringify(payload));
+    safeSocketSend(JSON.stringify(payload));
     $("#hand-overlay").removeClass("active");
     hideTimelineSelect();
     cancelDeploy();
@@ -563,7 +563,7 @@ function sendUseCard(timeline) {
     if (timeline !== null && timeline !== undefined) {
         payload.timeline = timeline;
     }
-    socket.send(JSON.stringify(payload));
+    safeSocketSend(JSON.stringify(payload));
     hideTimelineSelect();
     cancelDeploy();
     $("#hand-overlay").removeClass("active");

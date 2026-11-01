@@ -3,6 +3,8 @@
 运行方式: uvicorn app:app --reload
 (需要安装fastapi和uvicorn)
 '''
+import asyncio
+import secrets
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -34,6 +36,8 @@ app.add_middleware(
 
 # 存储所有WebSocket连接
 connections: list[WebSocket] = []
+# 同一个 client_id 重连时复用 Player 对象，从而复用房间和 GameSession
+players: dict[str, Player] = {}
 
 # 首页html内容显示
 @app.get("/")
@@ -42,27 +46,86 @@ def index():
         BASE_DIR / "frontend" / "index.html" 
     )
 
+async def send_reconnect_state(player: Player) -> None:
+    room = player.room
+    if room is None:
+        await player.send({
+            "type": "reconnected",
+            "room_id": None,
+            "in_game": False,
+        })
+        return
+    await room.player_reconnected(player)
+    in_game = room.game_session is not None
+    await player.send({
+        "type": "reconnected",
+        "room_id": room.room_id,
+        "in_game": in_game,
+        "side": player.side,
+        "vs_ai": room.vs_ai,
+    })
+    if room.game_session is not None:
+        if room.game_session.status.name == "FINISHED":
+            if player.side is not None:
+                await room.game_session.send_game_over_to(player.side)
+        elif player.side is not None:
+            await room.game_session.send_state_to(player.side)
+    else:
+        await player.send({
+            "type": "room_joined",
+            "room_id": room.room_id,
+        })
+
+async def heartbeat(websocket: WebSocket, player: Player) -> None:
+    try:
+        while player.websocket is websocket and player.connected:
+            await asyncio.sleep(15)
+            await websocket.send_json({"type": "ping"})
+    except Exception:
+        return
+
 # WebSocket连接
 @app.websocket("/ws")
-async def websocket_endpoint(
-    websocket: WebSocket
-):
-
+async def websocket_endpoint(websocket: WebSocket) -> None:
     await websocket.accept()
 
-    room = None
+    client_id = websocket.query_params.get("client_id")
+    if not client_id:
+        client_id = secrets.token_urlsafe(18)
+
+    player = players.get(client_id)
+    reconnecting = player is not None
+    if player is None:
+        player = Player(websocket, client_id)
+        players[client_id] = player
+    else:
+        old_websocket = player.websocket
+        player.websocket = websocket
+        player.connected = True
+        if player.disconnect_task is not None:
+            player.disconnect_task.cancel()
+            player.disconnect_task = None
+        if old_websocket is not websocket:
+            try:
+                await old_websocket.close()
+            except Exception:
+                pass
 
     connections.append(websocket)
-    
-    player = Player(websocket)
+    hb_task = asyncio.create_task(heartbeat(websocket, player))
+
+    if reconnecting:
+        await send_reconnect_state(player)
+
     try:
         while True:
-
             data = await websocket.receive_json()
-
             action = data.get("action")
 
-            
+            if action == "pong":
+                continue
+
+            room = player.room
 
             if action == "create_room":
                 vs_ai = bool(data.get("vs_ai", False))
@@ -120,14 +183,16 @@ async def websocket_endpoint(
                     "message": "无效的操作"
                 })    
     except WebSocketDisconnect:
-
-        connections.remove(websocket)
-        if room:
-            room.players.remove(player)
-
-            await room.broadcast({
-                "type": "opponent_left",
-            })
-            print(
-                "玩家断开连接"
-            )
+        print("玩家断开连接")
+    except Exception as err:
+        print(f"WebSocket error: {err}")
+    finally:
+        hb_task.cancel()
+        if websocket in connections:
+            connections.remove(websocket)
+        # 只有当前仍是这个连接时才标记断开；旧连接被新连接替换时不能误伤。
+        if player.websocket is websocket:
+            if player.room is not None:
+                await player.room.player_disconnected(player)
+            else:
+                players.pop(client_id, None)

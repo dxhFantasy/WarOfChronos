@@ -45,6 +45,7 @@ class GameSession:
         self.broadcaster: Callable[[dict[str, Any]], Coroutine[Any, Any, None]] = broadcaster
         self.bot_side: Literal["A", "B"] | None = bot_side
         self.bot_task: asyncio.Task[None] | None = None
+        self.game_over_payloads: dict[Literal["A", "B"], dict[str, Any]] = {}
 
     async def send_error(self, player_side: Literal["A", "B"], message: str) -> None:
         await self.connections[player_side].send({
@@ -398,6 +399,17 @@ class GameSession:
         await self.connections["B"].send(
             self.state_jsonify(state, "B")
         )
+
+    async def send_state_to(self, side: Literal["A", "B"]) -> None:
+        state = self.game.GetState()
+        await self.connections[side].send(
+            self.state_jsonify(state, side)
+        )
+
+    async def send_game_over_to(self, side: Literal["A", "B"]) -> None:
+        payload = self.game_over_payloads.get(side)
+        if payload is not None:
+            await self.connections[side].send(payload)
     async def broadcast_message(self, message: dict[str, Any]) -> None:
         await self.broadcaster(message)
     async def broadcast_game_over(
@@ -428,13 +440,15 @@ class GameSession:
                     message = "对方投降"
                 elif result == "lose":
                     message = "我方投降"
-            await self.connections[side].send({
+            payload: dict[str, Any] = {
                 "type": "game_over",
                 "winner": winner,
                 "my_result": result,
                 "message": message,
                 "reason": reason,
-            })
+            }
+            self.game_over_payloads[side] = payload
+            await self.connections[side].send(payload)
         return True
     async def broadcast_turn(self) -> None:
         await self.connections["A"].send(
