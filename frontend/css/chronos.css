@@ -1092,6 +1092,11 @@ h1 {
 .attack-target {
     box-shadow:0 0 18px rgba(239,68,68,.95) !important;
 }
+.unit-dying {
+    pointer-events:none;
+    filter:grayscale(.25);
+    box-shadow:0 0 18px rgba(148,163,184,.65);
+}
 #unit-actions {
     position:fixed;
     z-index:4000;
