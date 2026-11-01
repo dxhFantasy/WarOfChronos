@@ -340,6 +340,17 @@ function renderUnits(units, container, my_side){
         container.append(element)
     })
 }
+function createDeathGhost(unit) {
+    let temp = $("<div></div>").appendTo("body");
+    let unit_data = Object.assign({}, unit, {
+        canMove: false,
+        canAttack: false,
+    });
+    renderUnits([unit_data], temp, gameState.my_side);
+    let ghost = temp.children(".battle-unit").first();
+    temp.remove();
+    return ghost;
+}
 function showUnitDeaths(units) {
     if (!Array.isArray(units) || !gameState) {
         return;
@@ -349,7 +360,7 @@ function showUnitDeaths(units) {
             return;
         }
         let existing = $(`.battle-unit[data-unit-id="${unit.id}"]`);
-        let ghost;
+        let ghost = createDeathGhost(unit);
         let left;
         let top;
         let width;
@@ -357,7 +368,6 @@ function showUnitDeaths(units) {
 
         if (existing.length) {
             let rect = existing[0].getBoundingClientRect();
-            ghost = existing.first().clone();
             left = rect.left;
             top = rect.top;
             width = rect.width;
@@ -376,14 +386,6 @@ function showUnitDeaths(units) {
                 return;
             }
             let rect = container[0].getBoundingClientRect();
-            let temp = $("<div></div>").appendTo("body");
-            let unit_data = Object.assign({}, unit, {
-                canMove: false,
-                canAttack: false,
-            });
-            renderUnits([unit_data], temp, gameState.my_side);
-            ghost = temp.children(".battle-unit").first();
-            temp.remove();
             width = 120;
             height = 160;
             left = rect.left + rect.width / 2 - width / 2;
