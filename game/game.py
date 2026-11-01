@@ -824,7 +824,7 @@ class Game(GamePort):
               "id": u.id,
               "cardId": u.cardId,
               "atk": u.atk,
-              "dfns": max(0, u.dfns),
+              "dfns": u.dfns,
               "actionCost": u.actionCost,
               "tags": [t.keyword.value for t in u.tags],
               "owner": u.owner,
